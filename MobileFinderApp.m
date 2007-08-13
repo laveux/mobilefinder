@@ -37,6 +37,7 @@
 #import <UIKit/UITableCell.h>
 #import <UIKit/UITableColumn.h>
 #import "MobileFinderApp.h"
+#include <unistd.h>
 
 @implementation MobileFinderApp
 
@@ -66,8 +67,7 @@
 	[_mainView addSubview: _navBar];
     		  
     //Setup fileview table
-    //fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(3.0f, 48.0f, 320.0f, 480.0f - 16.0f - 32.0f)];
-	_fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(0.0f, 74.0f, 320.0f, 480.0f - 74.0f - 16.0f)];
+    _fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(0.0f, 74.0f, 320.0f, 480.0f - 74.0f - 16.0f)];
     _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MobileFinder" identifier: @"Finder" width: 320.0f];
 	[_fileviewTable addTableColumn: _fileviewTableCol]; 
     [_fileviewTable setDataSource: self];
@@ -84,7 +84,26 @@
 {		
 	//Change to the specified path
 	if ([_fileManager changeCurrentDirectoryPath: path] == FALSE)
+	{
+		//The path specified is not a directory
+		//Get the full path
+		NSString* exeFilename;
+		if ([path isAbsolutePath] == TRUE)
+			exeFilename = [[NSString alloc] initWithString: path];
+		else
+			exeFilename = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path];		
+		
+		//If the file is an executable, execute it
+		//TODO: This isn't really a "changeDirectory" sort of thing...
+		if ([_fileManager isExecutableFileAtPath: exeFilename])
+		{
+			//WARNING: This executes apps, but they never return!  You have to reboot!
+			//system([exeFilename fileSystemRepresentation]);
+		}
+		
+		//Don't decend into the dir, as it isn't one
 		return;
+	}
 	
 	//Make sure we have a new, empty fileviewCells
 	//TODO: Releases cells?
@@ -129,7 +148,7 @@
 
 - (void) changeDirectoryToLast
 {
-	[self changeDirectory: @"../"];//[[_fileManager currentDirectoryPath] stringByDeletingLastPathComponent]];
+	[self changeDirectory: @"../"];
 }
 
 - (UIImage*) chooseFileIcon: (NSString*) path
@@ -146,6 +165,14 @@
 	//Check if file is a directory
 	if (isDirectory == TRUE)
 		return [UIImage applicationImageNamed: @"Folder.png"];
+	
+	//Executables
+	if (isExecutable)
+	{
+		return [UIImage applicationImageNamed: @"Executable.png"];
+	}
+	
+	//TODO: More icons!
 		
 	//Special icon for file not found.  Return default.
 	return [UIImage applicationImageNamed: @"File.png"];
@@ -156,7 +183,7 @@
 	switch (button) 
 	{
 		case 0: //Right button
-			[self changeDirectoryToRoot];			
+			[self changeDirectoryToRoot];
 			break;
 		case 1:	//Left button
 			[self changeDirectoryToLast];
