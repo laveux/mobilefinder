@@ -27,27 +27,26 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <UIKit/UIApplication.h>
-#import <UIKit/UIPushButton.h>
-#import <UIKit/UITableCell.h>
-#import <UIKit/UIImageAndTextTableCell.h>
+#import "MobileFinderBrowser.h"
 
 @interface MobileFinderApp : UIApplication 
 {
 	UIWindow* _window;
 	UIView* _mainView;
+	MobileFinderBrowser* _browser;
 	UINavigationBar* _navBar;
-	UITable* _fileviewTable;
-	UITableColumn* _fileviewTableCol;
-	NSFileManager* _fileManager;
-    NSMutableArray* _fileviewCells;
-	NSMutableArray* _fileviewCellFilenames;
+	UINavBarButton* _moveButton;
+	UINavBarButton* _copyButton;
+	UINavBarButton* _deleteButton;
+	NSString* _pathSelectedForFileOp;
 }
 - (void) initApplication;
-- (void) changeDirectory: (NSString*)path;
-- (void) changeDirectoryToRoot;
-- (void) changeDirectoryToLast;
-- (UIImage*) chooseFileIcon: (NSString*) path;
 - (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button;
-
+- (void) resetFileOpButtons;
+- (void) copyButtonPressed;
+- (void) moveButtonPressed;
+- (void) deleteButtonPressed;
+- (void) browserCurrentDirectoryChanged: (MobileFinderBrowser*)browser ToPath: (NSString*)path;
+- (void) browserCurrentSelectedPathChanged: (MobileFinderBrowser*) browser ToPath: (NSString*) path;
 @end
 
