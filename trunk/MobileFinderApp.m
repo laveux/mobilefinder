@@ -36,8 +36,8 @@
 #import <UIKit/UITable.h>
 #import <UIKit/UITableCell.h>
 #import <UIKit/UITableColumn.h>
+#import <UIKit/UINavBarButton.h>
 #import "MobileFinderApp.h"
-#include <unistd.h>
 
 @implementation MobileFinderApp
 
@@ -52,130 +52,75 @@
     [_window _setHidden: NO];
 	
 	//Setup main view
-    struct CGRect rect = [UIHardware fullScreenApplicationContentRect];
-    rect.origin.x = rect.origin.y = 0.0f;
-    _mainView = [[UIView alloc] initWithFrame: rect];
+    struct CGRect screenRect = [UIHardware fullScreenApplicationContentRect];
+    screenRect.origin.x = 0.0;
+	screenRect.origin.y = 0.0f;
+    _mainView = [[UIView alloc] initWithFrame: screenRect];
     [_window setContentView: _mainView];
+	
+	//Control placement values
+	float navBarWidth = 320.0f;
+	float navBarHeight = 74.0f;
+	float navBarSouthBuffer = 5.0f;
+	float moveButtonWidth = 56.0f;
+	float copyButtonWidth = 56.0f;
+	float deleteButtonWidth = 56.0;
+	float buttonHeight = 32.0f;
+	float buttonBuffer = 4.0f;
 	  
 	//Setup navigation var
 	//CGSize navBarDefaultSize = [UINavigationBar defaultSizeWithPrompt];
 	//TODO: Delete, New, and Copy buttons
-	_navBar = [[UINavigationBar alloc] initWithFrame: CGRectMake(0.0f, 0.0f, 320.0f, 74.0f)];
-	[_navBar showButtonsWithLeftTitle: @"Back" rightTitle: @"Root" leftBack: YES];
-    [_navBar setBarStyle: 5];
+	/*
+		Navigation Bar Styles
+		0 - Dark Blue
+		1 - Black
+	*/
+	_navBar = [[UINavigationBar alloc] initWithFrame: CGRectMake(0.0f, 0.0f, navBarWidth, navBarHeight)];
+	[_navBar showButtonsWithLeftTitle: @"Back" rightTitle: @"Home" leftBack: TRUE];
+    [_navBar setBarStyle: 3];
 	[_navBar setDelegate: self];
 	[_mainView addSubview: _navBar];
-    		  
-    //Setup fileview table
-    _fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(0.0f, 74.0f, 320.0f, 480.0f - 74.0f - 16.0f)];
-    _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MobileFinder" identifier: @"Finder" width: 320.0f];
-	[_fileviewTable addTableColumn: _fileviewTableCol]; 
-    [_fileviewTable setDataSource: self];
-    [_fileviewTable setDelegate: self];
-    [_fileviewTable reloadData];
-	[_mainView addSubview: _fileviewTable];
 	
-	//List root
-	_fileManager = [NSFileManager defaultManager];
-	[self changeDirectoryToRoot];
-}
-
-- (void) changeDirectory: (NSString*)path
-{		
-	//Change to the specified path
-	if ([_fileManager changeCurrentDirectoryPath: path] == FALSE)
-	{
-		//The path specified is not a directory
-		//Get the full path
-		NSString* exeFilename;
-		if ([path isAbsolutePath] == TRUE)
-			exeFilename = [[NSString alloc] initWithString: path];
-		else
-			exeFilename = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path];		
-		
-		//If the file is an executable, execute it
-		//TODO: This isn't really a "changeDirectory" sort of thing...
-		if ([_fileManager isExecutableFileAtPath: exeFilename])
-		{
-			//WARNING: This executes apps, but they never return!  You have to reboot!
-			//system([exeFilename fileSystemRepresentation]);
-		}
-		
-		//Don't decend into the dir, as it isn't one
-		return;
-	}
+	//Setup file operation buttons
+	/*
+		Button Styles
+		0 - Dark Blue Rectangle
+		1 - Dark Red Rectangle
+		2 - Dark Blue Left Arrow
+		3 - Light Blue Rectangle
+	*/
+	_copyButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
+		navBarWidth / 2.0f - moveButtonWidth / 2.0f - copyButtonWidth - buttonBuffer,
+		navBarHeight - buttonHeight - navBarSouthBuffer, 
+		copyButtonWidth, buttonHeight)];
+	[_copyButton setAutosizesToFit: FALSE];
+	[_copyButton addTarget: self action: @selector(copyButtonPressed) forEvents: 1];
+	[self resetFileOpButtons];
+	[_navBar addSubview: _copyButton];
 	
-	//Make sure we have a new, empty fileviewCells
-	//TODO: Releases cells?
-	[_fileviewCells release];
-	_fileviewCells = [[NSMutableArray alloc] init];
-	[_fileviewCellFilenames release];
-	_fileviewCellFilenames = [[NSMutableArray alloc] init];
+	_moveButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
+		navBarWidth / 2.0f - copyButtonWidth / 2.0f, 
+		navBarHeight - buttonHeight - navBarSouthBuffer, 
+		moveButtonWidth, buttonHeight)];
+	[_moveButton setAutosizesToFit: FALSE];
+	[_moveButton addTarget: self action: @selector(moveButtonPressed) forEvents: 1];	
+	[self resetFileOpButtons];
+	[_navBar addSubview: _moveButton];
 	
-	//Get the directory listing for the specified path
-	NSDirectoryEnumerator* dirEnumerator = [_fileManager enumeratorAtPath: [_fileManager currentDirectoryPath]];
+	_deleteButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
+		navBarWidth / 2.0f - deleteButtonWidth / 2.0f + copyButtonWidth + buttonBuffer, 
+		navBarHeight - buttonHeight - navBarSouthBuffer, 
+		deleteButtonWidth, buttonHeight)];
+	[_deleteButton setAutosizesToFit: FALSE];
+	[_deleteButton addTarget: self action: @selector(deleteButtonPressed) forEvents: 1];	
+	[self resetFileOpButtons];
+	[_navBar addSubview: _deleteButton];
 	
-	//Create table cells for each file in the directory, and add them and their paths to the appropriate collections
-	NSString* filename;
-	while (filename = [dirEnumerator nextObject]) 
-	{
-		//Don't decend into directories
-		[dirEnumerator skipDescendents];	
-		
-		//Create table cell for filename
-		//TODO: Nicer filename, or raw?
-		UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
-		[cell setTitle: filename];	
-		[cell setImage: [self chooseFileIcon: filename]];
-		
-		//Add filename and cell to collections
-		[_fileviewCells addObject: cell];
-		[_fileviewCellFilenames addObject: filename];
-	}
-	
-	//Refresh the fileview table
-	[_fileviewTable reloadData];
-		
-	//Update navigation bar with new current directory
-	//TODO: Make "..." appear at end instead of beginning of path
-	[_navBar setPrompt: [_fileManager currentDirectoryPath]];
-}
-
-- (void) changeDirectoryToRoot
-{
-	[self changeDirectory: @"/"];
-}
-
-- (void) changeDirectoryToLast
-{
-	[self changeDirectory: @"../"];
-}
-
-- (UIImage*) chooseFileIcon: (NSString*) path
-{
-	//Get file attributes
-	BOOL isDirectory;
-	BOOL fileExsists = [_fileManager fileExistsAtPath: path isDirectory: &isDirectory];
-	BOOL isReadable = [_fileManager isReadableFileAtPath: path];
-	BOOL isWritable = [_fileManager isWritableFileAtPath: path];
-	BOOL isExecutable = [_fileManager isExecutableFileAtPath: path];
-	BOOL isDeletable = [_fileManager isDeletableFileAtPath: path];
-	NSString* extension = [path pathExtension];
-	
-	//Check if file is a directory
-	if (isDirectory == TRUE)
-		return [UIImage applicationImageNamed: @"Folder.png"];
-	
-	//Executables
-	if (isExecutable)
-	{
-		return [UIImage applicationImageNamed: @"Executable.png"];
-	}
-	
-	//TODO: More icons!
-		
-	//Special icon for file not found.  Return default.
-	return [UIImage applicationImageNamed: @"File.png"];
+	//Setup the file browser
+	_browser = [[MobileFinderBrowser alloc] initWithFrame: CGRectMake(0.0f, 74.0f, 320.0f, 480.0f - 74.0f - 16.0f)];
+	[_browser setDelegate: self];
+	[_mainView addSubview: _browser];
 }
 
 - (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button 
@@ -183,46 +128,148 @@
 	switch (button) 
 	{
 		case 0: //Right button
-			[self changeDirectoryToRoot];
+			[_browser changeDirectoryToHome];
 			break;
 		case 1:	//Left button
-			[self changeDirectoryToLast];
+			[_browser changeDirectoryToLast];
 			break;
 	}
+}
+
+- (void) resetFileOpButtons
+{
+	if (_copyButton != nil)
+	{
+		[_copyButton setNavBarButtonStyle: 0];
+		[_copyButton setTitle: @"Copy"];
+		[_copyButton setEnabled: TRUE];
+	}
+	if (_moveButton != nil)
+	{
+		[_moveButton setNavBarButtonStyle: 0];
+		[_moveButton setTitle: @"Move"];
+		[_moveButton setEnabled: TRUE];
+	}
+	if (_deleteButton != nil)
+	{
+		[_deleteButton setNavBarButtonStyle: 0];
+		[_deleteButton setTitle: @"Delete"];
+		[_deleteButton setEnabled: TRUE];
+	}
+}
+
+- (void) copyButtonPressed
+{
+	if ([_browser currentSelectedPath] == nil)
+	{
+		[self resetFileOpButtons];
+	}
+	else
+	{
+		if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
+		{ 
+			[self resetFileOpButtons];
+			[_copyButton setNavBarButtonStyle: 1];
+			[_copyButton setTitle: @"Cancel"];
+			[_moveButton setNavBarButtonStyle: 1];
+			[_moveButton setTitle: @"Paste"];
+			[_deleteButton setEnabled: FALSE];
+			_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
+		}
+		else if ([[_copyButton title] isEqualToString: @"Delete"])
+		{
+			//This is for when the delete button is pressed, and the copy button turns to "Delete"
+			[_browser deletePath: [_browser currentSelectedPath]];
+			[self resetFileOpButtons];
+		}
+		else
+		{
+			[self resetFileOpButtons];
+		}
+	}
+}
+
+- (void) moveButtonPressed
+{
+	if ([_browser currentSelectedPath] == nil)
+	{
+		[self resetFileOpButtons];
+	}
+	else
+	{
+		if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
+		{ 
+			[self resetFileOpButtons];
+			[_moveButton setNavBarButtonStyle: 1];
+			[_moveButton setTitle: @"Cancel"];
+			[_copyButton setEnabled: FALSE];
+			[_deleteButton setNavBarButtonStyle: 1];
+			[_deleteButton setTitle: @"Paste"];
+			_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
+		}
+		else if ([[_moveButton title] isEqualToString: @"Paste"])
+		{
+			//This is for when the copy button is pressed, and the move button turns to "Paste"
+			[_browser 
+				sendSrcPath: _pathSelectedForFileOp 
+				ToDstPath: [_browser currentDirectory]
+				ByMoving: FALSE];
+			[self resetFileOpButtons];
+		}
+		else
+		{
+			[self resetFileOpButtons];
+		}
+	}
+}
+
+- (void) deleteButtonPressed
+{
+	if ([_browser currentSelectedPath] == nil)
+	{
+		[self resetFileOpButtons];
+	}
+	else
+	{
+		if ([[_deleteButton title] isEqualToString: @"Delete"])
+		{
+			[self resetFileOpButtons];
+			[_deleteButton setNavBarButtonStyle: 1];
+			[_deleteButton setTitle: @"Cancel"];
+			[_moveButton setEnabled: FALSE];
+			[_copyButton setNavBarButtonStyle: 1];
+			[_copyButton setTitle: @"Delete"];
+		}
+		else if ([[_deleteButton title] isEqualToString: @"Paste"])
+		{
+			//This is for when the move button is pressed, and the delete button turns to "Paste"
+			[_browser 
+				sendSrcPath: _pathSelectedForFileOp 
+				ToDstPath: [_browser currentDirectory]
+				ByMoving: TRUE];
+			[self resetFileOpButtons];
+		}
+		else
+		{
+			[self resetFileOpButtons];
+		}
+	}
+}
+
+- (void) browserCurrentDirectoryChanged: (MobileFinderBrowser*)browser ToPath: (NSString*)path;
+{
+	[_navBar setPrompt: path];
+}
+
+- (void) browserCurrentSelectedPathChanged: (MobileFinderBrowser*) browser ToPath: (NSString*) path;
+{
+	//[self resetFileOpButtons];
 }
 
 - (void) applicationDidFinishLaunching: (id)unused
 {
 	//Init Application
 	[self initApplication];    
-}
-
-- (UITableCell*) table: (UITable*)table cellForRow: (int)row column: (int)col
-{
-	return [_fileviewCells objectAtIndex: row];
-}
-
-- (UITableCell*) table: (UITable*)table cellForRow: (int)row column: (int)col
-    reusing: (BOOL) reusing
-{
-    return nil;
-}
-
-- (int) numberOfRowsInTable: (UITable*)table
-{
-	if (table == _fileviewTable)
-		return [_fileviewCells count];
-	else
-		return 0;
-}
-
-- (void) tableRowSelected: (NSNotification*) notification 
-{
-	//Get selected cell and filename
-	UIImageAndTextTableCell* selectedCell = [_fileviewCells objectAtIndex: [_fileviewTable selectedRow]];
-	NSString* selectedFilename = [_fileviewCellFilenames objectAtIndex: [_fileviewTable selectedRow]];
-	
-	[self changeDirectory: selectedFilename];
 }
 
 @end //MobileFinderApp
