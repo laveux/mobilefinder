@@ -37,6 +37,8 @@
 #import <UIKit/UITableCell.h>
 #import <UIKit/UITableColumn.h>
 #import <UIKit/UINavBarButton.h>
+#import <UIKit/UIButtonBar.h>
+#import <UIKit/UIButtonBarTextButton.h>
 #import "MobileFinderApp.h"
 
 @implementation MobileFinderApp
@@ -58,8 +60,8 @@
     _mainView = [[UIView alloc] initWithFrame: screenRect];
     [_window setContentView: _mainView];
 	
-	//Control placement values
-	float navBarWidth = 320.0f;
+	//Control sizes
+	float navBarWidth = screenRect.size.width;
 	float navBarHeight = 74.0f;
 	float navBarSouthBuffer = 5.0f;
 	float moveButtonWidth = 56.0f;
@@ -67,6 +69,8 @@
 	float deleteButtonWidth = 56.0;
 	float buttonHeight = 32.0f;
 	float buttonBuffer = 4.0f;
+	float buttonBarWidth = screenRect.size.width;
+	float buttonBarHeight = 48.0f;//[UIButtonBar defaultHeight];
 	  
 	//Setup navigation var
 	//CGSize navBarDefaultSize = [UINavigationBar defaultSizeWithPrompt];
@@ -117,8 +121,32 @@
 	[self resetFileOpButtons];
 	[_navBar addSubview: _deleteButton];
 	
+	//Setup button bar
+	/*
+	_buttonBar = [[UIButtonBar alloc] initInView: _mainView withFrame: CGRectMake(
+		0.0f, 
+		screenRect.size.height - buttonBarHeight,
+		buttonBarWidth, buttonBarHeight) 
+		withItemList: [[NSArray alloc] init]];
+	[_buttonBar setBarStyle: 0];
+	_settingsButton = [[UIButtonBarTextButton alloc] 
+		initWithTitle: @"Settings"
+		selectedTitle: @"Settings"
+		withFont: [UIButtonBarButton _defaultLabelFont]
+		withBarStyle: 0
+		withStyle: 3
+		withTitleWidth: 100.0f];
+	[_settingsButton _setOn: TRUE];
+	[_settingsButton _showSelectedIndicator: TRUE changeSelection: TRUE]; 
+	[_settingsButton addTarget: self action: @selector(copyButtonPressed) forEvents: 1];
+	[_buttonBar addSubview: _settingsButton];
+	*/
+	
 	//Setup the file browser
-	_browser = [[MobileFinderBrowser alloc] initWithFrame: CGRectMake(0.0f, 74.0f, 320.0f, 480.0f - 74.0f - 16.0f)];
+	_browser = [[MobileFinderBrowser alloc] initWithFrame: CGRectMake(
+	0.0f, 
+	navBarHeight, 
+	screenRect.size.width, screenRect.size.height - navBarHeight)];// - buttonBarHeight)];
 	[_browser setDelegate: self];
 	[_mainView addSubview: _browser];
 }
@@ -162,6 +190,8 @@
 {
 	if ([_browser currentSelectedPath] == nil)
 	{
+		char* argv = "/Applications/Finder.app/Finder";
+		UIApplicationMain(1, &argv, [MobileFinderApp class]);
 		[self resetFileOpButtons];
 	}
 	else

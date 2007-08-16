@@ -54,7 +54,7 @@
 - (void) changeDirectoryToLast;
 - (void) changeDirectoryToHome;
 - (void) sendSrcPath: (NSString*)srcPath ToDstPath: (NSString*)dstPath ByMoving: (BOOL)move;
-- (UIImage*) determineFileIcon: (NSString*)path;
+- (UIImage*) determineFileIcon: (NSString*)absolutePath;
 - (void) deletePath: path;
 
 @end

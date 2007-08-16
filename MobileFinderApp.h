@@ -38,6 +38,8 @@
 	UINavBarButton* _moveButton;
 	UINavBarButton* _copyButton;
 	UINavBarButton* _deleteButton;
+	//UIButtonBar* _buttonBar;
+	//UIButtonBarTextButton* _settingsButton;
 	NSString* _pathSelectedForFileOp;
 }
 - (void) initApplication;

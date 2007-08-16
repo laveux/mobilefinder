@@ -11,7 +11,7 @@ Finder:	MobileFinder.o MobileFinderApp.o MobileFinderBrowser.o
 		$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 install:
-		cp -f Finder ./Finder.App
+		cp -f Finder ./Finder.app
 clean:
 		rm -f *.o MobileFinder
 
