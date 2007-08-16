@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>Finder</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.unknown.MobileFinder</string>
+	<string>com.googlecode.MobileFinder</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
@@ -20,4 +20,3 @@
 	<integer>3</integer>
 </dict>
 </plist>
-

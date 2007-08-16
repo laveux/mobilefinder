@@ -38,6 +38,7 @@
 #import <UIKit/UITableCell.h>
 #import <UIKit/UITableColumn.h>
 #import <UIKit/UIImage.h>
+#import <UIKit/UIButtonBar.h>
 #include <unistd.h>
 #import "MobileFinderBrowser.h"
 
@@ -164,7 +165,16 @@
 			//  /Developer/SDKs/iPhone/bin/arm-apple-darwin-ld: Undefined symbols:
 			//  .objc_class_name_NSTask
 			//  make: *** [Finder] Error 1
+			//NSTask* task = [[NSTask alloc] init];
 			//[NSTask launchedTaskWithLaunchPath: absolutePath arguments:[[NSArray alloc] init]];
+		}
+		
+		//TODO: Here is where we would launch apps in the preferences based on extensions
+		NSString* extension = [absolutePath pathExtension];
+		
+		if ([extension isEqualToString: @"txt"])
+		{
+			//TODO: Launch MobileTextEdit
 		}
 	}
 }
@@ -284,15 +294,32 @@
 	BOOL isDeletable = [_fileManager isDeletableFileAtPath: path];
 	NSString* extension = [path pathExtension];
 	
+	//Applications
+	if ([extension isEqualToString: @"app"])
+	{
+		//TODO: Could use any of these from UIImage to load path. Which will work most often?
+		//+ (id)applicationImageNamed:(id)fp8;	// IMP=0x323bbdbc
+		//+ (id)defaultDesktopImage;	// IMP=0x323bc1f4
+		//+ (id)imageAtPath:(id)fp8;	// IMP=0x323bbda4
+		//+ (id)imageFromAlbumArtData:(id)fp8 height:(int)fp12 width:(int)fp16 cache:(BOOL)fp20;	// IMP=0x323bc3d8
+		//+ (id)imageNamed:(id)fp8;	// IMP=0x323bbd54
+		//+ (id)imageNamed:(id)fp8 inBundle:(id)fp12;	// IMP=0x323bbd8c
+		NSString* absolutePath = [[NSString alloc] initWithString: path];
+		if ([absolutePath isAbsolutePath] == FALSE)
+			absolutePath = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path];
+		NSString* appIconPath = [absolutePath stringByAppendingPathComponent: @"icon.png"];
+			
+		if ([_fileManager isReadableFileAtPath: appIconPath])
+			return [UIImage imageAtPath: appIconPath];
+	}
+	
 	//Check if file is a directory
 	if (isDirectory == TRUE)
 		return [UIImage applicationImageNamed: @"Folder.png"];
 	
 	//Executables
 	if (isExecutable)
-	{
-		return [UIImage applicationImageNamed: @"Executable.png"];
-	}
+		return [UIImage applicationImageNamed: @"Executable.png"];	
 	
 	//TODO: More icons!
 		
