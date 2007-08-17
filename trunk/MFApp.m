@@ -40,6 +40,7 @@
 #import <UIKit/UIButtonBar.h>
 #import <UIKit/UIButtonBarTextButton.h>
 #import "MFApp.h"
+#import "MSAppLauncher.h"
 
 @implementation MFApp
 
@@ -286,12 +287,12 @@
 	}
 }
 
-- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser ToPath: (NSString*)path;
+- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
 {
 	[_navBar setPrompt: path];
 }
 
-- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser ToPath: (NSString*) path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
 {
 	//[self resetFileOpButtons];
 }

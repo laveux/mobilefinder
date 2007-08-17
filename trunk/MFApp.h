@@ -48,7 +48,7 @@
 - (void) copyButtonPressed;
 - (void) moveButtonPressed;
 - (void) deleteButtonPressed;
-- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser ToPath: (NSString*)path;
-- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser ToPath: (NSString*) path;
+- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
 @end
 
