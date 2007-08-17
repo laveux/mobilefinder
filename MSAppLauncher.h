@@ -33,4 +33,7 @@
 
 + (void) launchApplication: (NSString*)appID withApplication: (UIApplication*)app;
 + (void) launchApplication: (NSString*)appID withAppBundlePath: (NSString*)appBundlePath withArguments: (NSArray*)args withApplication: (UIApplication*)app withLaunchingAppID: (NSString*)launchingAppID withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath;
++ (NSArray*) readLaunchInfoArgumentsFromBundlePath: (NSString*)plistPath;
++ (NSString*) readLaunchInfoArgumentFromBundlePath: (NSString*)plistPath;
+
 @end

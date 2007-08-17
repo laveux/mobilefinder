@@ -63,7 +63,7 @@
 
 //Protocol for browser state change notifications
 @interface NSObject (MFBrowserStateChange)
-- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser ToPath: (NSString*)path;
-- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser ToPath: (NSString*) path;
+- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
 @end
 

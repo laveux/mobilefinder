@@ -44,7 +44,7 @@
 		launchingAppBundlePath, @"MSLaunchingAppBundlePath",
 		appID, @"MSLaunchedAppIdentifier",
 		appBundlePath, @"MSLaunchedAppBundlePath",		
-		args, @"MSLaunchedAppArgs",
+		args, @"MSLaunchedAppArguments",
 		nil];
 	
 	//Seralize LaunchInfo.plist dictionary
@@ -59,6 +59,41 @@
 
 	//Actually launch application
 	[MSAppLauncher launchApplication: appID withApplication: app];
+}
+
++ (NSArray*) readLaunchInfoArgumentsFromBundlePath: (NSString*)bundlePath
+{
+	//Build the full path to the LaunchInfo.plist file
+	NSString* plistPath = [bundlePath stringByAppendingPathComponent: @"LaunchInfo.plist"];
+	
+	//Open the plist and find the application's identifier
+	//TODO: file errors
+	if ([[NSFileManager defaultManager] isReadableFileAtPath: plistPath])
+	{
+		NSDictionary* plistDict = [NSDictionary dictionaryWithContentsOfFile: plistPath];
+		NSEnumerator* enumerator = [plistDict keyEnumerator];
+		NSString* key;
+		while (key = [enumerator nextObject]) 
+		{					
+			if ([key isEqualToString: @"MSLaunchedAppArguments"])
+			{
+				return [plistDict valueForKey: key];
+			}
+		}
+	}	
+		
+	//Key not found, return nil
+	return nil;
+}
+
++ (NSString*) readLaunchInfoArgumentFromBundlePath: (NSString*)bundlePath
+{
+	//Return just the first argument from the launch info file
+	NSArray* args = [MSAppLauncher readLaunchInfoArgumentsFromBundlePath: bundlePath];
+	if (args == nil)
+		return nil;
+	else
+		return [args objectAtIndex: 0];
 }
 
 @end

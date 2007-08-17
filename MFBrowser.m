@@ -56,7 +56,7 @@
 	
 	//Setup fileview table
     _fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height)];
-    _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MF" identifier: @"Finder" width: rect.size.width];
+    _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MobileFinder" identifier: @"Finder" width: rect.size.width];
 	[_fileviewTable addTableColumn: _fileviewTableCol]; 
     [_fileviewTable setDataSource: self];
     [_fileviewTable setDelegate: self];
@@ -96,9 +96,9 @@
 	
 	//TODO: Better way to initialize this?
 	//Notify delegate of current statuses	
-	[_delegate browserCurrentDirectoryChanged: self ToPath: [_fileManager currentDirectoryPath]];
+	[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
 	if (_selectedPath != nil)
-		[_delegate browserCurrentSelectedPathChanged: self ToPath: _selectedPath];
+		[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
 }
 
 - (void) refreshFileView
@@ -140,7 +140,7 @@
 - (void) selectPath: (NSString*)path
 {
 	_selectedPath = [[NSString alloc] initWithString: path];
-	[_delegate browserCurrentSelectedPathChanged: self ToPath: _selectedPath];
+	[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
 	
 	//TODO: Select the table cell in the UI or make this function private
 }
@@ -158,7 +158,7 @@
 		[self refreshFileView];		
 	
 		//Let delegate know of directory change
-		[_delegate browserCurrentDirectoryChanged: self ToPath: [_fileManager currentDirectoryPath]];
+		[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
 		
 		//Execute application if this is an application
 		//TODO: Need to save current position in finder before execute
@@ -173,13 +173,13 @@
 				NSEnumerator* enumerator = [plistDict keyEnumerator];
 				NSString* key;
 				NSString* appID;
-				int i = 0;
-				while ((key = [enumerator nextObject])) 
+				while (key = [enumerator nextObject]) 
 				{					
 					if ([key isEqualToString: @"CFBundleIdentifier"])
 					{
-						[_delegate browserCurrentDirectoryChanged: self ToPath: key];
+						[_delegate browserCurrentDirectoryChanged: self toPath: key];
 						appID = [plistDict valueForKey: key];
+						break;
 					}
 				}				
 				
@@ -204,15 +204,23 @@
 		}	
 		else if ([extension isEqualToString: @"txt"])
 		{
-			//TODO: Dynamic prefs for strings
-			
+			//TODO: Dynamic prefs for strings			
 			[MSAppLauncher launchApplication: @"com.port21.iphone.TextEdit" 
 				withAppBundlePath: @"/Applications/TextEdit.app"
 				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
 				withApplication: _application
-				withLaunchingAppID: @"com.googlecode.MF"
+				withLaunchingAppID: @"com.googlecode.MobileFinder"
+				withLaunchingAppBundlePath: @"/Applications/Finder.app"];				
+		}
+		else if ([extension isEqualToString: @"tst"])
+		{
+			//TODO: Dynamic prefs for strings			
+			[MSAppLauncher launchApplication: @"com.googlecode.MobileFinder" 
+				withAppBundlePath: @"/Applications/Finder.app"
+				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
+				withApplication: _application
+				withLaunchingAppID: @"com.googlecode.MobileFinder"
 				withLaunchingAppBundlePath: @"/Applications/Finder.app"];
-				
 		}
 	}
 }
