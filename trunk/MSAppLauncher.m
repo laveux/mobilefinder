@@ -28,7 +28,7 @@
 #import <UIKit/UIApplication.h>
 #import "MSAppLauncher.h"
 
-@implementation MSAppLauncher
+@implementation MSAppLauncher : NSObject
 
 + (void) launchApplication: (NSString*)appID withApplication: (UIApplication*)app
 {
@@ -36,25 +36,26 @@
 	[app launchApplicationWithIdentifier: appID suspended: NO];
 }
 
-+ (void) launchApplication: (NSString*)appID withAppBundlePath: (NSString*)appBundlePath withArguments: (NSArray*) args withApplication: (UIApplication*)app withLaunchingAppID: (NSString*)launchingAppID withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath
++ (void) launchApplication: (NSString*)appID withAppBundlePath: (NSString*)appBundlePath withArguments: (NSArray*)args withApplication: (UIApplication*)app withLaunchingAppID: (NSString*)launchingAppID withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath
 {
 	//Build LaunchInfo.plist dictionary
 	NSDictionary* plist = [[NSDictionary alloc] initWithObjectsAndKeys:
 		launchingAppID, @"MSLaunchingAppIdentifier",
-		launchingAppPath, @"MSLaunchingAppBundlePath",
+		launchingAppBundlePath, @"MSLaunchingAppBundlePath",
 		appID, @"MSLaunchedAppIdentifier",
 		appBundlePath, @"MSLaunchedAppBundlePath",		
-		args, @"MSLaunchedAppArgs"];
+		args, @"MSLaunchedAppArgs",
+		nil];
 	
 	//Seralize LaunchInfo.plist dictionary
-	dataFromPropertyList:(id)plist format:(NSPropertyListFormat)format errorDescription:(NSString **)errorString;
+	NSString* error;
 	NSData* rawPList = [NSPropertyListSerialization dataFromPropertyList: plist		
-		format:
-		errorDescription:
-		error:];
+		format: NSPropertyListXMLFormat_v1_0
+		errorDescription: &error];
 	
 	//Write LaunchInfo.plist file
-	[rawPList writeFile
+	NSString* path = [appBundlePath stringByAppendingPathComponent: @"LaunchInfo.plist"];
+	[rawPList writeToFile: path atomically: YES];
 
 	//Actually launch application
 	[MSAppLauncher launchApplication: appID withApplication: app];

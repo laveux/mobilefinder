@@ -1,5 +1,5 @@
 /*
-	MobileFinderApp.m
+	MFApp.m
 	
 	Finder application UI.
 	
@@ -27,13 +27,13 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <UIKit/UIApplication.h>
-#import "MobileFinderBrowser.h"
+#import "MFBrowser.h"
 
-@interface MobileFinderApp : UIApplication 
+@interface MFApp : UIApplication 
 {
 	UIWindow* _window;
 	UIView* _mainView;
-	MobileFinderBrowser* _browser;
+	MFBrowser* _browser;
 	UINavigationBar* _navBar;
 	UINavBarButton* _moveButton;
 	UINavBarButton* _copyButton;
@@ -48,7 +48,7 @@
 - (void) copyButtonPressed;
 - (void) moveButtonPressed;
 - (void) deleteButtonPressed;
-- (void) browserCurrentDirectoryChanged: (MobileFinderBrowser*)browser ToPath: (NSString*)path;
-- (void) browserCurrentSelectedPathChanged: (MobileFinderBrowser*) browser ToPath: (NSString*) path;
+- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser ToPath: (NSString*)path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser ToPath: (NSString*) path;
 @end
 

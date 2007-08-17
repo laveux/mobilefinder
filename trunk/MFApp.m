@@ -1,5 +1,5 @@
 /*
-	MobileFinderApp.m
+	MFApp.m
 	
 	Finder application UI.
 	
@@ -39,9 +39,9 @@
 #import <UIKit/UINavBarButton.h>
 #import <UIKit/UIButtonBar.h>
 #import <UIKit/UIButtonBarTextButton.h>
-#import "MobileFinderApp.h"
+#import "MFApp.h"
 
-@implementation MobileFinderApp
+@implementation MFApp
 
 - (void) initApplication
 {   
@@ -143,12 +143,11 @@
 	*/
 	
 	//Setup the file browser
-	_browser = [[MobileFinderBrowser alloc] initWithFrame: CGRectMake(
+	_browser = [[MFBrowser alloc] initWithApplication: self andFrame: CGRectMake(
 		0.0f, 
 		navBarHeight, 
 		screenRect.size.width, screenRect.size.height - navBarHeight)];// - buttonBarHeight)];
 	[_browser setDelegate: self];
-	[_browser setApplication: self];
 	[_mainView addSubview: _browser];
 }
 
@@ -192,7 +191,7 @@
 	if ([_browser currentSelectedPath] == nil)
 	{
 		char* argv = "/Applications/Finder.app/Finder";
-		UIApplicationMain(1, &argv, [MobileFinderApp class]);
+		UIApplicationMain(1, &argv, [MFApp class]);
 		[self resetFileOpButtons];
 	}
 	else
@@ -243,8 +242,8 @@
 			//This is for when the copy button is pressed, and the move button turns to "Paste"
 			[_browser 
 				sendSrcPath: _pathSelectedForFileOp 
-				ToDstPath: [_browser currentDirectory]
-				ByMoving: FALSE];
+				toDstPath: [_browser currentDirectory]
+				byMoving: FALSE];
 			[self resetFileOpButtons];
 		}
 		else
@@ -276,8 +275,8 @@
 			//This is for when the move button is pressed, and the delete button turns to "Paste"
 			[_browser 
 				sendSrcPath: _pathSelectedForFileOp 
-				ToDstPath: [_browser currentDirectory]
-				ByMoving: TRUE];
+				toDstPath: [_browser currentDirectory]
+				byMoving: TRUE];
 			[self resetFileOpButtons];
 		}
 		else
@@ -287,12 +286,12 @@
 	}
 }
 
-- (void) browserCurrentDirectoryChanged: (MobileFinderBrowser*)browser ToPath: (NSString*)path;
+- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser ToPath: (NSString*)path;
 {
 	[_navBar setPrompt: path];
 }
 
-- (void) browserCurrentSelectedPathChanged: (MobileFinderBrowser*) browser ToPath: (NSString*) path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser ToPath: (NSString*) path;
 {
 	//[self resetFileOpButtons];
 }
@@ -303,5 +302,5 @@
 	[self initApplication];    
 }
 
-@end //MobileFinderApp
+@end //MFApp
 
