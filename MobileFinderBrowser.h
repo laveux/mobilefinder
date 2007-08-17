@@ -44,11 +44,10 @@
 	UIApplication* _application;
 	NSString* _selectedPath;
 }
-- (id) initWithFrame: (struct CGRect)rect;
+- (id) initWithApplication: (UIApplication*) app andFrame: (struct CGRect)rect;
 - (NSString*) absolutePath: (NSString*) path;
 - (NSString*) currentDirectory;
 - (NSString*) currentSelectedPath;
-- (void) setApplication: (UIApplication*)app;
 - (void) setDelegate: (id)delegate;
 - (void) refreshFileView;
 - (void) openPath: (NSString*)path;
@@ -56,7 +55,8 @@
 - (void) changeDirectoryToRoot;
 - (void) changeDirectoryToLast;
 - (void) changeDirectoryToHome;
-- (void) sendSrcPath: (NSString*)srcPath ToDstPath: (NSString*)dstPath ByMoving: (BOOL)move;
+- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
+- (void) launchApplication: (NSString*)appID arguments: (NSArray*) args: withMyAppID: (NSString*)myAppID;
 - (UIImage*) determineFileIcon: (NSString*)absolutePath;
 - (void) deletePath: path;
 

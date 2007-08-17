@@ -42,13 +42,17 @@
 #import <UIKit/UIButtonBar.h>
 #include <unistd.h>
 #import "MobileFinderBrowser.h"
+#import "MSAppLauncher.h"
 
 @implementation MobileFinderBrowser : UIView
 
-- (id) initWithFrame: (struct CGRect)rect
+- (id) initWithApplication: (UIApplication*) app AndFrame: (struct CGRect)rect
 {
 	//Init view with frame rect
 	[super initWithFrame: rect];
+	
+	//Save application object for launching other apps
+	_application = app;
 	
 	//Setup fileview table
     _fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height)];
@@ -85,11 +89,6 @@
 - (NSString*) currentSelectedPath
 {
 	return _selectedPath;
-}
-
-- (void) setApplication: (UIApplication*)app
-{
-	_application = app;
 }
 
 - (void) setDelegate: (id)delegate;
@@ -164,7 +163,7 @@
 		
 		//Execute application if this is an application
 		//TODO: Need to save current position in finder before execute
-		if ([extension isEqualToString: @"app"] && _application != nil)
+		if ([extension isEqualToString: @"app"])
 		{
 			//Check to see if the application directory has an Info.plist
 			NSString* infoPListPath = [path stringByAppendingPathComponent: @"Info.plist"];
@@ -185,9 +184,9 @@
 					}
 				}				
 				
-				//Launch application (Thanks Launcher.app dev team!)
+				//Launch application
 				if (appID != nil)
-					[_application launchApplicationWithIdentifier:appID suspended:NO];
+					[MSAppLauncher launchApplication: appID withApplication: _application];
 			}
 		}
 	}
@@ -207,7 +206,13 @@
 		else if ([extension isEqualToString: @"txt"])
 		{
 			//TODO: Dynamic prefs for strings
-			[_application launchApplicationWithIdentifier:@"com.port21.iphone.TextEdit" suspended: NO];
+			[MSAppLauncherlaunchApplication: @"com.port21.whatever.TextEdit" 
+				withAppBundlePath: @"/Applications/TextEdit.app"
+				withArguments: absolutePath
+				withApplication: _application
+				withLaunchingAppID: @"com.googlecode.MobileFinder"
+				withLaunchingAppBundlePath: @"/Applications/Finder.app"];
+			[MSAppLauncher launchApplication: appID withApplication: _application];
 		}
 	}
 }
