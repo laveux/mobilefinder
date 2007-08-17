@@ -1,5 +1,5 @@
 /*
-	MobileFinder.m
+	MFMain.m
 	
 	Main file for MobileFinder.  Creates an instance of the app and runs it.
 	
@@ -25,11 +25,11 @@
 */
 
 #import <UIKit/UIKit.h>
-#import "MobileFinderApp.h"
+#import "MFApp.h"
 
 int main(int argc, char** argv)
 {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-	return UIApplicationMain(argc, argv, [MobileFinderApp class]);
+	return UIApplicationMain(argc, argv, [MFApp class]);
 }
 

@@ -1,5 +1,5 @@
 /*
-	MobileFinderBrowser.m
+	MFBrowser.m
 	
 	Finder file browser control.
 	
@@ -41,12 +41,12 @@
 #import <UIKit/UIImage.h>
 #import <UIKit/UIButtonBar.h>
 #include <unistd.h>
-#import "MobileFinderBrowser.h"
+#import "MFBrowser.h"
 #import "MSAppLauncher.h"
 
-@implementation MobileFinderBrowser : UIView
+@implementation MFBrowser : UIView
 
-- (id) initWithApplication: (UIApplication*) app AndFrame: (struct CGRect)rect
+- (id) initWithApplication: (UIApplication*) app andFrame: (struct CGRect)rect
 {
 	//Init view with frame rect
 	[super initWithFrame: rect];
@@ -56,7 +56,7 @@
 	
 	//Setup fileview table
     _fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height)];
-    _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MobileFinder" identifier: @"Finder" width: rect.size.width];
+    _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MF" identifier: @"Finder" width: rect.size.width];
 	[_fileviewTable addTableColumn: _fileviewTableCol]; 
     [_fileviewTable setDataSource: self];
     [_fileviewTable setDelegate: self];
@@ -73,11 +73,10 @@
 
 - (NSString*) absolutePath: (NSString*) path
 {
-	NSString* absolutePath;
 	if ([path isAbsolutePath])
-		absolutePath = [[NSString alloc] initWithString: path];
+		return [[NSString alloc] initWithString: path];
 	else
-		absolutePath = [[NSString alloc] initWithString: [
+		return [[NSString alloc] initWithString: [
 			[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path]];		
 }
 
@@ -202,17 +201,18 @@
 			//Should only execute executables that eventually end
 			//TODO: Allow cancelation of execution
 			system([absolutePath fileSystemRepresentation]);
-		}		
+		}	
 		else if ([extension isEqualToString: @"txt"])
 		{
 			//TODO: Dynamic prefs for strings
-			[MSAppLauncherlaunchApplication: @"com.port21.whatever.TextEdit" 
+			
+			[MSAppLauncher launchApplication: @"com.port21.iphone.TextEdit" 
 				withAppBundlePath: @"/Applications/TextEdit.app"
-				withArguments: absolutePath
+				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
 				withApplication: _application
-				withLaunchingAppID: @"com.googlecode.MobileFinder"
+				withLaunchingAppID: @"com.googlecode.MF"
 				withLaunchingAppBundlePath: @"/Applications/Finder.app"];
-			[MSAppLauncher launchApplication: appID withApplication: _application];
+				
 		}
 	}
 }
@@ -232,7 +232,7 @@
 	[self openPath: NSHomeDirectory()];
 }
 
-- (void) sendSrcPath: (NSString*)srcPath ToDstPath: (NSString*)dstPath ByMoving: (BOOL)move;
+- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
 {
 	//Ensure absolute paths
 	//TODO: Files in root are interprated as non-absolute (eg: /Test).  This should be fixed to allow

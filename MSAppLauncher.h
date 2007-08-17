@@ -27,10 +27,10 @@
 #import <UIKit/UIKit.h>
 #import <UIKit/UIApplication.h>
 
-@interface MSAppLauncher
+@interface MSAppLauncher : NSObject
 {
 }
 
 + (void) launchApplication: (NSString*)appID withApplication: (UIApplication*)app;
-+ (void) launchApplication: (NSString*)appID withAppBundlePath: (NSString*)appBundlePath withArguments: (NSArray*) args withApplication: (UIApplication*)app withLaunchingAppID: (NSString*)launchingAppID withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath;
++ (void) launchApplication: (NSString*)appID withAppBundlePath: (NSString*)appBundlePath withArguments: (NSArray*)args withApplication: (UIApplication*)app withLaunchingAppID: (NSString*)launchingAppID withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath;
 @end

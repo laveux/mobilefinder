@@ -1,5 +1,5 @@
 /*
-	MobileFinderBrowser.h
+	MFBrowser.h
 	
 	Finder file browser control.
 	
@@ -33,7 +33,7 @@
 #import <UIKit/UITableColumn.h>
 #import <UIKit/UINavigationBar.h>
 
-@interface MobileFinderBrowser : UIView
+@interface MFBrowser : UIView
 {
 	UITable* _fileviewTable;
 	UITableColumn* _fileviewTableCol;
@@ -56,15 +56,14 @@
 - (void) changeDirectoryToLast;
 - (void) changeDirectoryToHome;
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
-- (void) launchApplication: (NSString*)appID arguments: (NSArray*) args: withMyAppID: (NSString*)myAppID;
 - (UIImage*) determineFileIcon: (NSString*)absolutePath;
 - (void) deletePath: path;
 
 @end
 
 //Protocol for browser state change notifications
-@interface NSObject (MobileFinderBrowserStateChange)
-- (void) browserCurrentDirectoryChanged: (MobileFinderBrowser*)browser ToPath: (NSString*)path;
-- (void) browserCurrentSelectedPathChanged: (MobileFinderBrowser*) browser ToPath: (NSString*) path;
+@interface NSObject (MFBrowserStateChange)
+- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser ToPath: (NSString*)path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser ToPath: (NSString*) path;
 @end
 
