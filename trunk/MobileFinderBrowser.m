@@ -165,8 +165,29 @@
 		//TODO: Need to save current position in finder before execute
 		if ([extension isEqualToString: @"app"] && _application != nil)
 		{
-			//Launch application (Thanks Launcher.app dev team!)
-			[_application launchApplicationWithIdentifier:@"com.port21.iphone.TextEdit" suspended:NO];
+			//Check to see if the application directory has an Info.plist
+			NSString* infoPListPath = [path stringByAppendingPathComponent: @"Info.plist"];
+			if ([_fileManager isReadableFileAtPath: path])
+			{
+				//Open the plist and find the application's identifier
+				NSDictionary* plistDict = [NSDictionary dictionaryWithContentsOfFile: infoPListPath];
+				NSEnumerator* enumerator = [plistDict keyEnumerator];
+				NSString* key;
+				NSString* appID;
+				int i = 0;
+				while ((key = [enumerator nextObject])) 
+				{					
+					if ([key isEqualToString: @"CFBundleIdentifier"])
+					{
+						[_delegate browserCurrentDirectoryChanged: self ToPath: key];
+						appID = [plistDict valueForKey: key];
+					}
+				}				
+				
+				//Launch application (Thanks Launcher.app dev team!)
+				if (appID != nil)
+					[_application launchApplicationWithIdentifier:appID suspended:NO];
+			}
 		}
 	}
 	else
