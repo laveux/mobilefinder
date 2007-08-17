@@ -126,6 +126,14 @@
 		UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
 		[cell setTitle: filename];	
 		[cell setImage: [self determineFileIcon: filename]];
+		
+		//Setup cell size based on image size
+		UIImage* icon = [self determineFileIcon: filename];
+		float minSize = 32.0f;
+		if (icon == nil || minSize > [icon size].height)
+			[_fileviewTable setRowHeight: minSize];
+		else
+			[_fileviewTable setRowHeight: [icon size].height];
 	
 		//Add filename and cell to collections
 		//Cells and filenames are stored seperately to allow the displayed name to differ from the actual name
