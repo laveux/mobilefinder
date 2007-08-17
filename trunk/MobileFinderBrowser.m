@@ -28,6 +28,7 @@
 #import <Foundation/Foundation.h>
 #import <Foundation/NSTask.h>
 #import <UIKit/CDStructures.h>
+#import <UIKit/UIApplication.h>
 #import <UIKit/UIPushButton.h>
 #import <UIKit/UIThreePartButton.h>
 #import <UIKit/UINavigationBar.h>
@@ -65,6 +66,16 @@
 	return self;
 }
 
+- (NSString*) absolutePath: (NSString*) path
+{
+	NSString* absolutePath;
+	if ([path isAbsolutePath])
+		absolutePath = [[NSString alloc] initWithString: path];
+	else
+		absolutePath = [[NSString alloc] initWithString: [
+			[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path]];		
+}
+
 - (NSString*) currentDirectory
 {
 	return [_fileManager currentDirectoryPath];
@@ -73,6 +84,11 @@
 - (NSString*) currentSelectedPath
 {
 	return _selectedPath;
+}
+
+- (void) setApplication: (UIApplication*)app
+{
+	_application = app;
 }
 
 - (void) setDelegate: (id)delegate;
@@ -132,6 +148,10 @@
 
 - (void) openPath: (NSString*)path
 {		
+	//Get path extension and absolute path
+	NSString* extension = [path pathExtension];
+	NSString* absolutePath = [self absolutePath: path];		
+	
 	//Change to the specified path, if it is a directory
 	if ([_fileManager changeCurrentDirectoryPath: path])
 	{
@@ -140,41 +160,32 @@
 	
 		//Let delegate know of directory change
 		[_delegate browserCurrentDirectoryChanged: self ToPath: [_fileManager currentDirectoryPath]];
+		
+		//Execute application if this is an application
+		//TODO: Need to save current position in finder before execute
+		if ([extension isEqualToString: @"app"] && _application != nil)
+		{
+			//Launch application (Thanks Launcher.app dev team!)
+			[_application launchApplicationWithIdentifier:@"com.port21.iphone.TextEdit" suspended:NO];
+		}
 	}
 	else
 	{
-		//The tapped cell was not a directory 
+		//The tapped cell was not a directory
 		//Open the file using the appropriate applicaiton or execute the file if it is executable	
-	
-		//Get the full path to the file
-		//TODO: This interprates executables in the root incorrectly (eg: /Test), but should still work
-		NSString* absolutePath;
-		if ([path isAbsolutePath])
-			absolutePath = [[NSString alloc] initWithString: path];
-		else
-			absolutePath = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path];		
-		
+			
 		//If the file is an executable, execute it
 		if ([_fileManager isExecutableFileAtPath: absolutePath])
 		{
-			//TODO: WARNING: This executes apps, but they never return!  You have to reboot!
+			//WARNING: This executes GUI apps, but they never return!  You have to reboot!
+			//Should only execute executables that eventually end
+			//TODO: Allow cancelation of execution
 			system([absolutePath fileSystemRepresentation]);
-			
-			//Launch task with no arguments (thanks bofors!)
-			//TODO: No good yet, compiles but fails link:
-			//  /Developer/SDKs/iPhone/bin/arm-apple-darwin-ld: Undefined symbols:
-			//  .objc_class_name_NSTask
-			//  make: *** [Finder] Error 1
-			//NSTask* task = [[NSTask alloc] init];
-			//[NSTask launchedTaskWithLaunchPath: absolutePath arguments:[[NSArray alloc] init]];
-		}
-		
-		//TODO: Here is where we would launch apps in the preferences based on extensions
-		NSString* extension = [absolutePath pathExtension];
-		
-		if ([extension isEqualToString: @"txt"])
+		}		
+		else if ([extension isEqualToString: @"txt"])
 		{
-			//TODO: Launch MobileTextEdit
+			//TODO: Dynamic prefs for strings
+			[_application launchApplicationWithIdentifier:@"com.port21.iphone.TextEdit" suspended: NO];
 		}
 	}
 }

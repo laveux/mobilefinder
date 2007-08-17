@@ -41,11 +41,14 @@
     NSMutableArray* _fileviewCells;
 	NSMutableArray* _fileviewCellFilenames;
 	id _delegate;
+	UIApplication* _application;
 	NSString* _selectedPath;
 }
 - (id) initWithFrame: (struct CGRect)rect;
+- (NSString*) absolutePath: (NSString*) path;
 - (NSString*) currentDirectory;
 - (NSString*) currentSelectedPath;
+- (void) setApplication: (UIApplication*)app;
 - (void) setDelegate: (id)delegate;
 - (void) refreshFileView;
 - (void) openPath: (NSString*)path;
