@@ -55,6 +55,7 @@
 - (void) changeDirectoryToRoot;
 - (void) changeDirectoryToLast;
 - (void) changeDirectoryToHome;
+- (void) changeDirectoryToApplications;
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
 - (UIImage*) determineFileIcon: (NSString*)absolutePath;
 - (void) deletePath: path;

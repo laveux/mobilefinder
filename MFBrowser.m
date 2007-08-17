@@ -240,6 +240,11 @@
 	[self openPath: NSHomeDirectory()];
 }
 
+- (void) changeDirectoryToApplications
+{
+	[self openPath: @"/Applications"];
+}
+
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
 {
 	//Ensure absolute paths

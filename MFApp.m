@@ -149,6 +149,7 @@
 		navBarHeight, 
 		screenRect.size.width, screenRect.size.height - navBarHeight)];// - buttonBarHeight)];
 	[_browser setDelegate: self];
+	[_browser changeDirectoryToApplications];
 	[_mainView addSubview: _browser];
 }
 
