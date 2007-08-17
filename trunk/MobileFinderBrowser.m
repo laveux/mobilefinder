@@ -56,6 +56,7 @@
 	[_fileviewTable addTableColumn: _fileviewTableCol]; 
     [_fileviewTable setDataSource: self];
     [_fileviewTable setDelegate: self];
+	[_fileviewTable setRowHeight: 64.0f];
 	[_fileviewTable reloadData];
 	[self addSubview: _fileviewTable];
 	
@@ -126,15 +127,7 @@
 		UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
 		[cell setTitle: filename];	
 		[cell setImage: [self determineFileIcon: filename]];
-		
-		//Setup cell size based on image size
-		UIImage* icon = [self determineFileIcon: filename];
-		float minSize = 32.0f;
-		if (icon == nil || minSize > [icon size].height)
-			[_fileviewTable setRowHeight: minSize];
-		else
-			[_fileviewTable setRowHeight: [icon size].height];
-	
+					
 		//Add filename and cell to collections
 		//Cells and filenames are stored seperately to allow the displayed name to differ from the actual name
 		//(eg. Calculator.app -> Calculator)
@@ -351,6 +344,8 @@
 			
 		if ([_fileManager isReadableFileAtPath: appIconPath])
 			return [UIImage imageAtPath: appIconPath];
+		else
+			return [UIImage applicationImageNamed: @"Application.png"];
 	}
 	
 	//Check if file is a directory
