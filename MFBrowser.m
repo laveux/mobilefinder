@@ -73,7 +73,7 @@
 
 - (NSString*) absolutePath: (NSString*) path
 {
-	if ([path isAbsolutePath])
+	if ([path isAbsolutePath] || [[path stringByDeletingLastPathComponent] isEqualToString: @"/"])
 		return [[NSString alloc] initWithString: path];
 	else
 		return [[NSString alloc] initWithString: [
@@ -205,7 +205,7 @@
 		else if ([extension isEqualToString: @"txt"])
 		{
 			//TODO: Dynamic prefs for strings			
-			[MSAppLauncher launchApplication: @"com.port21.iphone.TextEdit" 
+			[MSAppLauncher launchApplication: @"com.googlecode.TextEdit" 
 				withAppBundlePath: @"/Applications/TextEdit.app"
 				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
 				withApplication: _application
@@ -248,13 +248,9 @@
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
 {
 	//Ensure absolute paths
-	//TODO: Files in root are interprated as non-absolute (eg: /Test).  This should be fixed to allow
-	//relative paths to be moved/copied
-	//if ([srcPath isAbsolutePath] == FALSE && [srcPath isEqualToString: @"/"] == FALSE);
-	//	srcPath = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: srcPath]; 
-	//if ([dstPath isAbsolutePath] == FALSE && [dstPath isEqualToString: @"/"] == FALSE)
-	//	dstPath = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: dstPath];
-		
+	srcPath = [self absolutePath: srcPath];
+	dstPath = [self absolutePath: dstPath];
+	
 	//Get source file attributes
 	BOOL srcPathIsDirectory;
 	BOOL srcPathExsists = [_fileManager fileExistsAtPath: srcPath isDirectory: &srcPathIsDirectory];
@@ -327,6 +323,20 @@
 	//}
 }
 
+- (void) makeDirectoryAtPath: (NSString*)path
+{
+	BOOL operationSuccess = [_fileManager createDirectoryAtPath: path attributes: nil];
+	//TODO: error on failed deletion
+	[self refreshFileView];
+}
+
+- (void) makeFileAtPath: (NSString*)path
+{
+	BOOL operationSuccess = [_fileManager createFileAtPath: path contents: nil attributes:nil];
+	//TODO: error on failed deletion
+	[self refreshFileView];
+}
+
 - (void) deletePath: path
 {
 	BOOL operationSuccess = [_fileManager removeFileAtPath: path handler: nil];
@@ -348,16 +358,7 @@
 	//Applications
 	if ([extension isEqualToString: @"app"])
 	{
-		//TODO: Could use any of these from UIImage to load path. Which will work most often?
-		//+ (id)applicationImageNamed:(id)fp8;	// IMP=0x323bbdbc
-		//+ (id)defaultDesktopImage;	// IMP=0x323bc1f4
-		//+ (id)imageAtPath:(id)fp8;	// IMP=0x323bbda4
-		//+ (id)imageFromAlbumArtData:(id)fp8 height:(int)fp12 width:(int)fp16 cache:(BOOL)fp20;	// IMP=0x323bc3d8
-		//+ (id)imageNamed:(id)fp8;	// IMP=0x323bbd54
-		//+ (id)imageNamed:(id)fp8 inBundle:(id)fp12;	// IMP=0x323bbd8c
-		NSString* absolutePath = [[NSString alloc] initWithString: path];
-		if ([absolutePath isAbsolutePath] == FALSE)
-			absolutePath = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path];
+		NSString* absolutePath = [self absolutePath: path];
 		NSString* appIconPath = [absolutePath stringByAppendingPathComponent: @"icon.png"];
 			
 		if ([_fileManager isReadableFileAtPath: appIconPath])
