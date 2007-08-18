@@ -205,7 +205,7 @@
 		else if ([extension isEqualToString: @"txt"])
 		{
 			//TODO: Dynamic prefs for strings			
-			[MSAppLauncher launchApplication: @"com.googlecode.TextEdit" 
+			[MSAppLauncher launchApplication: @"com.google.code.MobileTextEdit" 
 				withAppBundlePath: @"/Applications/TextEdit.app"
 				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
 				withApplication: _application
@@ -217,6 +217,16 @@
 			//TODO: Dynamic prefs for strings			
 			[MSAppLauncher launchApplication: @"com.googlecode.MobileFinder" 
 				withAppBundlePath: @"/Applications/Finder.app"
+				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
+				withApplication: _application
+				withLaunchingAppID: @"com.googlecode.MobileFinder"
+				withLaunchingAppBundlePath: @"/Applications/Finder.app"];
+		}
+		else if ([extension isEqualToString: @"png"] || [extension isEqualToString: @"gif"] || [extension isEqualToString: @"jpg"])
+		{
+			//TODO: Dynamic prefs for strings			
+			[MSAppLauncher launchApplication: @"com.google.code.MobilePreview" 
+				withAppBundlePath: @"/Applications/Preview.app"
 				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
 				withApplication: _application
 				withLaunchingAppID: @"com.googlecode.MobileFinder"
