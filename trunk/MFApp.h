@@ -27,27 +27,38 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <UIKit/UIApplication.h>
+#import <UIKit/UIGradientBar.h>
 #import "MFBrowser.h"
+#import "MFSettings.h"
 
-@interface MFApp : UIApplication 
+@interface MFApp : UIApplication
 {
 	UIWindow* _window;
 	UIView* _mainView;
 	MFBrowser* _browser;
+	MFSettings* _settings;
 	UINavigationBar* _navBar;
+	UINavBarButton* _finderButton;
+	UINavBarButton* _settingsButton;
+	UIGradientBar* _fileOpBar;
 	UINavBarButton* _moveButton;
 	UINavBarButton* _copyButton;
 	UINavBarButton* _deleteButton;
-	//UIButtonBar* _buttonBar;
-	//UIButtonBarTextButton* _settingsButton;
+	UINavBarButton* _makeDirButton;
+	UINavBarButton* _makeFileButton;
+	
 	NSString* _pathSelectedForFileOp;
 }
 - (void) initApplication;
-- (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button;
+- (void) makeBrowserActive;
+- (void) makeSettingsActive;
 - (void) resetFileOpButtons;
 - (void) copyButtonPressed;
 - (void) moveButtonPressed;
 - (void) deleteButtonPressed;
+- (void) makeDirButtonPressed;
+- (void) makeFileButtonPressed;
+- (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button;
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
 - (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
 @end
