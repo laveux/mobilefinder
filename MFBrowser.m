@@ -184,7 +184,7 @@
 				}				
 				
 				//Launch application
-				if (appID != nil)
+				if (appID != nil && appID != @"com.apple.springboard")
 					[MSAppLauncher launchApplication: appID withApplication: _application];
 			}
 		}
@@ -203,6 +203,16 @@
 			system([absolutePath fileSystemRepresentation]);
 		}	
 		else if ([extension isEqualToString: @"txt"])
+		{
+			//TODO: Dynamic prefs for strings			
+			[MSAppLauncher launchApplication: @"com.google.code.MobileTextEdit" 
+				withAppBundlePath: @"/Applications/TextEdit.app"
+				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
+				withApplication: _application
+				withLaunchingAppID: @"com.googlecode.MobileFinder"
+				withLaunchingAppBundlePath: @"/Applications/Finder.app"];				
+		}
+		else if ([extension isEqualToString: @"plist"])
 		{
 			//TODO: Dynamic prefs for strings			
 			[MSAppLauncher launchApplication: @"com.google.code.MobileTextEdit" 
