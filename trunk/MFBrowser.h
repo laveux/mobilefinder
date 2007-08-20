@@ -32,6 +32,7 @@
 #import <UIKit/UITable.h>
 #import <UIKit/UITableColumn.h>
 #import <UIKit/UINavigationBar.h>
+#import <UIKit/UITextView.h>
 
 @interface MFBrowser : UIView
 {
@@ -43,6 +44,12 @@
 	id _delegate;
 	UIApplication* _application;
 	NSString* _selectedPath;
+	
+	//Used for rename feature
+	CGRect _fileviewTableRect;
+	UIKeyboard* _keyboard;
+	UITextView* _filenameTextField;
+	NSString* _renamingFilename;
 }
 - (id) initWithApplication: (UIApplication*) app andFrame: (struct CGRect)rect;
 - (NSString*) absolutePath: (NSString*) path;
@@ -50,8 +57,9 @@
 - (NSString*) currentSelectedPath;
 - (void) setDelegate: (id)delegate;
 - (void) refreshFileView;
-- (void) openPath: (NSString*)path;
 - (void) selectPath: (NSString*)path;
+- (void) openPath: (NSString*)path;
+- (UIImage*) determineFileIcon: (NSString*)absolutePath;
 - (void) changeDirectoryToRoot;
 - (void) changeDirectoryToLast;
 - (void) changeDirectoryToHome;
@@ -59,14 +67,15 @@
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
 - (void) makeDirectoryAtPath: (NSString*)path;
 - (void) makeFileAtPath: (NSString*)path;
-- (UIImage*) determineFileIcon: (NSString*)absolutePath;
-- (void) deletePath: path;
+- (void) deletePath:(NSString*) path;
+- (void) beginRenamePath: (NSString*)path;
+- (void) endRenameSaving: (BOOL)save;
 
 @end
 
 //Protocol for browser state change notifications
 @interface NSObject (MFBrowserStateChange)
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
-- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*)browser toPath: (NSString*)path;
 @end
 
