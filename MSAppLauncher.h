@@ -32,8 +32,15 @@
 }
 
 + (void) launchApplication: (NSString*)appID withApplication: (UIApplication*)app;
-+ (void) launchApplication: (NSString*)appID withAppBundlePath: (NSString*)appBundlePath withArguments: (NSArray*)args withApplication: (UIApplication*)app withLaunchingAppID: (NSString*)launchingAppID withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath;
-+ (NSArray*) readLaunchInfoArgumentsFromBundlePath: (NSString*)plistPath;
-+ (NSString*) readLaunchInfoArgumentFromBundlePath: (NSString*)plistPath;
++ (void) launchApplication: (NSString*)appID 
+	withAppBundlePath: (NSString*)appBundlePath 
+	withArguments: (NSArray*)args 
+	withApplication: (UIApplication*)app 
+	withLaunchingAppID: (NSString*)launchingAppID 
+	withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath;
++ (NSDictionary*) readLaunchInfoFromBundlePath: (NSString*)bundlePath deletingLaunchPList: (BOOL)deleteLaunchPList;
++ (id) readLaunchInfoKey: (NSString*)key fromBundlePath: (NSString*)bundlePath deletingLaunchPList: (BOOL)deleteLaunchPList;
++ (NSArray*) readLaunchInfoArgumentsFromBundlePath: (NSString*)bundlePath deletingLaunchPList: (BOOL)deleteLaunchPList;
++ (NSString*) readLaunchInfoArgumentFromBundlePath: (NSString*)bundlePath deleteingLaunchPList: (BOOL)deleteLaunchPList;
 
 @end

@@ -44,8 +44,8 @@
 	UINavBarButton* _moveButton;
 	UINavBarButton* _copyButton;
 	UINavBarButton* _deleteButton;
-	UINavBarButton* _makeDirButton;
-	UINavBarButton* _makeFileButton;
+	UINavBarButton* _renameButton;
+	UINavBarButton* _newButton;
 	
 	NSString* _pathSelectedForFileOp;
 }
@@ -56,8 +56,8 @@
 - (void) copyButtonPressed;
 - (void) moveButtonPressed;
 - (void) deleteButtonPressed;
-- (void) makeDirButtonPressed;
-- (void) makeFileButtonPressed;
+- (void) renameButtonPressed;
+- (void) newButtonPressed;
 - (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button;
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
 - (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;

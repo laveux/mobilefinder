@@ -74,11 +74,12 @@
 	float fileOpBarNorthBuffer = 8.0f;
 	float fileOpBarButtonHeight = 32.0f;
 	float fileOpBarButtonBuffer = 2.0f;
+	float fileOpBarButtonGroupBuffer = 4.0f;
 	float moveButtonWidth = 60.0f;
 	float copyButtonWidth = 60.0f;
 	float deleteButtonWidth = 60.0f;
-	float makeDirButtonWidth = 60.0f;
-	float makeFileButtonWidth = 60.0f;
+	float renameButtonWidth = 60.0f;
+	float newButtonWidth = 60.0f;
 	  
 	//Setup navigation bar
 	/*
@@ -126,7 +127,7 @@
 		
 	//Setup file operation buttons
 	_copyButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - copyButtonWidth - fileOpBarButtonBuffer * 2.0,
+		fileOpBarWidth / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - copyButtonWidth - fileOpBarButtonBuffer * 2.0 - fileOpBarButtonGroupBuffer,
 		fileOpBarNorthBuffer, 
 		copyButtonWidth, fileOpBarButtonHeight)];
 	[_copyButton setAutosizesToFit: FALSE];
@@ -135,7 +136,7 @@
 	[_fileOpBar addSubview: _copyButton];
 	
 	_moveButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - fileOpBarButtonBuffer * 1.0, 
+		fileOpBarWidth / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - fileOpBarButtonBuffer * 1.0 - fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
 		moveButtonWidth, fileOpBarButtonHeight)];
 	[_moveButton setAutosizesToFit: FALSE];
@@ -152,24 +153,24 @@
 	[self resetFileOpButtons];
 	[_fileOpBar addSubview: _deleteButton];
 	
-	_makeDirButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f + deleteButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0, 
+	_renameButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
+		fileOpBarWidth / 2.0f + deleteButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0 + fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
-		makeDirButtonWidth, fileOpBarButtonHeight)];
-	[_makeDirButton setAutosizesToFit: FALSE];
-	//[_makeDirButton setTitleFont: [UIButtonBarButton _defaultLabelFont]];
-	[_makeDirButton addTarget: self action: @selector(makeDirButtonPressed) forEvents: 1];	
+		renameButtonWidth, fileOpBarButtonHeight)];
+	[_renameButton setAutosizesToFit: FALSE];
+	//[_renameButton setTitleFont: [UIButtonBarButton _defaultLabelFont]];
+	[_renameButton addTarget: self action: @selector(renameButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _makeDirButton];
+	[_fileOpBar addSubview: _renameButton];
 	
-	_makeFileButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f + deleteButtonWidth / 2.0f + makeDirButtonWidth + fileOpBarButtonBuffer * 2.0, 
+	_newButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
+		fileOpBarWidth / 2.0f + deleteButtonWidth / 2.0f + renameButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
-		makeFileButtonWidth, fileOpBarButtonHeight)];
-	[_makeFileButton setAutosizesToFit: FALSE];
-	[_makeFileButton addTarget: self action: @selector(makeFileButtonPressed) forEvents: 1];	
+		newButtonWidth, fileOpBarButtonHeight)];
+	[_newButton setAutosizesToFit: FALSE];
+	[_newButton addTarget: self action: @selector(newButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _makeFileButton];
+	[_fileOpBar addSubview: _newButton];
 		
 	//Setup the file browser
 	_browser = [[MFBrowser alloc] initWithApplication: self andFrame: CGRectMake(
@@ -228,140 +229,49 @@
 		[_deleteButton setTitle: @"Delete"];
 		[_deleteButton setEnabled: TRUE];
 	}
-	if (_makeDirButton != nil)
+	if (_renameButton != nil)
 	{
-		[_makeDirButton setNavBarButtonStyle: 0];
-		[_makeDirButton setTitle: @"MK Dir"];
-		[_makeDirButton setEnabled: TRUE];
+		[_renameButton setNavBarButtonStyle: 0];
+		[_renameButton setTitle: @"Rename"];
+		[_renameButton setEnabled: TRUE];
 	}
-	if (_makeFileButton != nil)
+	if (_newButton != nil)
 	{
-		[_makeFileButton setNavBarButtonStyle: 0];
-		[_makeFileButton setTitle: @"MK File"];
-		[_makeFileButton setEnabled: TRUE];
+		[_newButton setNavBarButtonStyle: 0];
+		[_newButton setTitle: @"New"];
+		[_newButton setEnabled: TRUE];
 	}
 }
 
 - (void) copyButtonPressed
 {
-	if ([_browser currentSelectedPath] == nil)
-	{
+	if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
+	{ 
 		[self resetFileOpButtons];
-	}
-	else
-	{
-		if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
-		{ 
-			[self resetFileOpButtons];
-			[_copyButton setNavBarButtonStyle: 3];
-			[_copyButton setTitle: @"Cancel"];
-			[_moveButton setNavBarButtonStyle: 3];
-			[_moveButton setTitle: @"Paste"];
-			[_deleteButton setEnabled: FALSE];
-			[_makeDirButton setEnabled: FALSE];
-			[_makeFileButton setEnabled: FALSE];
-			_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
-		}
-		else if ([[_deleteButton title] isEqualToString: @"Paste"])
-		{
-			//This is for when the move button is pressed, and the copy button turns to "Paste"
-			[_browser 
-				sendSrcPath: _pathSelectedForFileOp 
-				toDstPath: [_browser currentDirectory]
-				byMoving: TRUE];
-			[self resetFileOpButtons];
-		}
-		else if ([[_copyButton title] isEqualToString: @"Delete"])
-		{
-			//This is for when the delete button is pressed, and the copy button turns to "Delete"
-			[_browser deletePath: [_browser currentSelectedPath]];
-			[self resetFileOpButtons];
-		}
-		else
-		{
-			[self resetFileOpButtons];
-		}
-	}
-}
-
-- (void) moveButtonPressed
-{
-	if ([_browser currentSelectedPath] == nil)
-	{
-		[self resetFileOpButtons];
-	}
-	else
-	{
-		if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
-		{ 
-			[self resetFileOpButtons];
-			[_moveButton setNavBarButtonStyle: 3];
-			[_moveButton setTitle: @"Cancel"];
-			[_copyButton setNavBarButtonStyle: 3];
-			[_copyButton setTitle: @"Paste"];
-			[_deleteButton setEnabled: FALSE];
-			[_makeDirButton setEnabled: FALSE];
-			[_makeFileButton setEnabled: FALSE];
-			_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
-		}
-		else if ([[_moveButton title] isEqualToString: @"Paste"])
-		{
-			//This is for when the copy button is pressed, and the move button turns to "Paste"
-			[_browser 
-				sendSrcPath: _pathSelectedForFileOp 
-				toDstPath: [_browser currentDirectory]
-				byMoving: FALSE];
-			[self resetFileOpButtons];
-		}
-		else
-		{
-			[self resetFileOpButtons];
-		}
-	}
-}
-
-- (void) deleteButtonPressed
-{
-	if ([_browser currentSelectedPath] == nil)
-	{
-		[self resetFileOpButtons];
-	}
-	else
-	{
-		if ([[_deleteButton title] isEqualToString: @"Delete"])
-		{
-			[self resetFileOpButtons];
-			[_deleteButton setNavBarButtonStyle: 3];
-			[_deleteButton setTitle: @"Cancel"];
-			[_moveButton setEnabled: FALSE];
-			[_copyButton setNavBarButtonStyle: 3];
-			[_copyButton setTitle: @"Delete"];
-			[_makeDirButton setEnabled: FALSE];
-			[_makeFileButton setEnabled: FALSE];
-		}
-		else
-		{
-			[self resetFileOpButtons];
-		}
-	}
-}
-
-- (void) makeDirButtonPressed
-{
-	if ([[_makeDirButton title] isEqualToString: @"MK Dir"])
-	{
-		[self resetFileOpButtons];
-		[_moveButton setEnabled: FALSE];
-		[_copyButton setEnabled: FALSE];
+		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setTitle: @"Cancel"];
+		[_moveButton setNavBarButtonStyle: 3];
+		[_moveButton setTitle: @"Paste"];
 		[_deleteButton setEnabled: FALSE];
-		[_makeDirButton setNavBarButtonStyle: 3];
-		[_makeDirButton setTitle: @"Cancel"];
-		[_makeFileButton setNavBarButtonStyle: 3];
-		[_makeFileButton setTitle: @"MK Dir"];
+		[_renameButton setEnabled: FALSE];
+		[_newButton setEnabled: FALSE];
+		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
 	}
-	else if ([[_makeDirButton title] isEqualToString: @"MK File"])
+	else if ([[_copyButton title] isEqualToString: @"Paste"])
 	{
-		//This is for when the make file button is pressed, and the make directory button turns to "MK File"
+		[_browser 
+			sendSrcPath: _pathSelectedForFileOp 
+			toDstPath: [_browser currentDirectory]
+			byMoving: TRUE];
+		[self resetFileOpButtons];
+	}
+	else if ([[_copyButton title] isEqualToString: @"Delete"])
+	{
+		[_browser deletePath: [_browser currentSelectedPath]];
+		[self resetFileOpButtons];
+	}
+	else if ([[_copyButton title] isEqualToString: @"File"])
+	{
 		[_browser makeFileAtPath: @"untitled file"];
 		[self resetFileOpButtons];
 	}
@@ -371,23 +281,104 @@
 	}
 }
 
-- (void) makeFileButtonPressed
+- (void) moveButtonPressed
 {
-	if ([[_makeFileButton title] isEqualToString: @"MK File"])
+	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
+	{ 
+		[self resetFileOpButtons];
+		[_moveButton setNavBarButtonStyle: 3];
+		[_moveButton setTitle: @"Cancel"];
+		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setTitle: @"Paste"];
+		[_deleteButton setEnabled: FALSE];
+		[_renameButton setEnabled: FALSE];
+		[_newButton setEnabled: FALSE];
+		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
+	}
+	else if ([[_moveButton title] isEqualToString: @"Paste"])
+	{
+		[_browser 
+			sendSrcPath: _pathSelectedForFileOp 
+			toDstPath: [_browser currentDirectory]
+			byMoving: FALSE];
+		[self resetFileOpButtons];
+	}
+	else if ([[_moveButton title] isEqualToString: @"Folder"])
+	{
+		[_browser makeDirectoryAtPath: @"untitled folder"];
+		[self resetFileOpButtons];
+	}
+	else
+	{
+		[self resetFileOpButtons];
+	}
+}
+
+- (void) deleteButtonPressed
+{
+	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentSelectedPath] != nil)
+	{
+		[self resetFileOpButtons];
+		[_deleteButton setNavBarButtonStyle: 3];
+		[_deleteButton setTitle: @"Cancel"];
+		[_moveButton setEnabled: FALSE];
+		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setTitle: @"Delete"];
+		[_renameButton setEnabled: FALSE];
+		[_newButton setEnabled: FALSE];
+	}
+	else
+	{
+		[self resetFileOpButtons];
+	}
+}
+
+- (void) renameButtonPressed
+{
+	if ([[_renameButton title] isEqualToString: @"Rename"] && [_browser currentSelectedPath] != nil)
 	{
 		[self resetFileOpButtons];
 		[_moveButton setEnabled: FALSE];
 		[_copyButton setEnabled: FALSE];
 		[_deleteButton setEnabled: FALSE];
-		[_makeDirButton setNavBarButtonStyle: 3];
-		[_makeDirButton setTitle: @"MK File"];
-		[_makeFileButton setNavBarButtonStyle: 3];
-		[_makeFileButton setTitle: @"Cancel"];
+		[_renameButton setNavBarButtonStyle: 3];
+		[_renameButton setTitle: @"Cancel"];
+		[_newButton setNavBarButtonStyle: 3];
+		[_newButton setTitle: @"Rename"];
 	}
-	else if ([[_makeFileButton title] isEqualToString: @"MK Dir"])
+	else if ([[_renameButton title] isEqualToString: @"Cancel"])
 	{
-		//This is for when the make file button is pressed, and the make directory button turns to "MK File"
-		[_browser makeDirectoryAtPath: @"untitled folder"];
+		[_browser endRenameSaving: FALSE];
+		[self resetFileOpButtons];
+	}
+	else
+	{
+		[self resetFileOpButtons];
+	}
+}
+
+- (void) newButtonPressed
+{
+	if ([[_newButton title] isEqualToString: @"New"])
+	{
+		[self resetFileOpButtons];
+		[_moveButton setNavBarButtonStyle: 3];
+		[_moveButton setTitle: @"Folder"];
+		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setTitle: @"File"];
+		[_deleteButton setEnabled: FALSE];
+		[_renameButton setEnabled: FALSE];
+		[_newButton setNavBarButtonStyle: 3];
+		[_newButton setTitle: @"Cancel"];
+	}
+	else if ([[_newButton title] isEqualToString: @"Rename"])
+	{
+		[_newButton setTitle: @"Done"];
+		[_browser beginRenamePath: [_browser currentSelectedPath]];
+	}
+	else if ([[_newButton title] isEqualToString: @"Done"])
+	{
+		[_browser endRenameSaving: TRUE];
 		[self resetFileOpButtons];
 	}
 	else

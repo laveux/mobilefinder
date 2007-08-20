@@ -36,7 +36,12 @@
 	[app launchApplicationWithIdentifier: appID suspended: NO];
 }
 
-+ (void) launchApplication: (NSString*)appID withAppBundlePath: (NSString*)appBundlePath withArguments: (NSArray*)args withApplication: (UIApplication*)app withLaunchingAppID: (NSString*)launchingAppID withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath
++ (void) launchApplication: (NSString*)appID 
+	withAppBundlePath: (NSString*)appBundlePath 
+	withArguments: (NSArray*)args 
+	withApplication: (UIApplication*)app 
+	withLaunchingAppID: (NSString*)launchingAppID 
+	withLaunchingAppBundlePath: (NSString*)launchingAppBundlePath
 {
 	//Build LaunchInfo.plist dictionary
 	NSDictionary* plist = [[NSDictionary alloc] initWithObjectsAndKeys:
@@ -61,7 +66,7 @@
 	[MSAppLauncher launchApplication: appID withApplication: app];
 }
 
-+ (NSArray*) readLaunchInfoArgumentsFromBundlePath: (NSString*)bundlePath
++ (NSDictionary*) readLaunchInfoFromBundlePath: (NSString*)bundlePath deletingLaunchPList: (BOOL)deleteLaunchPList
 {
 	//Build the full path to the LaunchInfo.plist file
 	NSString* plistPath = [bundlePath stringByAppendingPathComponent: @"LaunchInfo.plist"];
@@ -71,25 +76,44 @@
 	if ([[NSFileManager defaultManager] isReadableFileAtPath: plistPath])
 	{
 		NSDictionary* plistDict = [NSDictionary dictionaryWithContentsOfFile: plistPath];
-		NSEnumerator* enumerator = [plistDict keyEnumerator];
-		NSString* key;
-		while (key = [enumerator nextObject]) 
-		{					
-			if ([key isEqualToString: @"MSLaunchedAppArguments"])
-			{
-				return [plistDict valueForKey: key];
-			}
-		}
-	}	
-		
-	//Key not found, return nil
+		if (deleteLaunchPList)
+			[[NSFileManager defaultManager] removeFileAtPath: plistPath handler: nil];
+		return plistDict;
+	}
+	
+	//Property list not found, return nil
 	return nil;
 }
 
-+ (NSString*) readLaunchInfoArgumentFromBundlePath: (NSString*)bundlePath
++ (id) readLaunchInfoKey: (NSString*)key fromBundlePath: (NSString*)bundlePath deletingLaunchPList: (BOOL)deleteLaunchPList
 {
-	//Return just the first argument from the launch info file
-	NSArray* args = [MSAppLauncher readLaunchInfoArgumentsFromBundlePath: bundlePath];
+	NSDictionary* plistDict = [MSAppLauncher readLaunchInfoFromBundlePath: bundlePath deletingLaunchPList: deleteLaunchPList];
+	if (plistDict == nil)
+		return nil;
+		
+	NSEnumerator* enumerator = [plistDict keyEnumerator];
+	NSString* currKey;
+	while (currKey = [enumerator nextObject]) 
+	{					
+		if ([currKey isEqualToString: key])
+		{
+			return [plistDict valueForKey: currKey];
+		}
+	}
+}
+
++ (NSArray*) readLaunchInfoArgumentsFromBundlePath: (NSString*)bundlePath deletingLaunchPList: (BOOL)deleteLaunchPList
+{
+	//Return the argument array from the launch info file
+	return [MSAppLauncher readLaunchInfoKey: @"MSLaunchedAppArguments" 
+		fromBundlePath: bundlePath 
+		deletingLaunchPList: deleteLaunchPList];
+}
+
++ (NSString*) readLaunchInfoArgumentFromBundlePath: (NSString*)bundlePath deleteingLaunchPList: (BOOL)deleteLaunchPList
+{
+	//Return just the first argument from the launch info argument array
+	NSArray* args = [MSAppLauncher readLaunchInfoArgumentsFromBundlePath: bundlePath deletingLaunchPList: deleteLaunchPList];
 	if (args == nil)
 		return nil;
 	else

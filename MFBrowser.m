@@ -40,6 +40,9 @@
 #import <UIKit/UITableColumn.h>
 #import <UIKit/UIImage.h>
 #import <UIKit/UIButtonBar.h>
+#import <UIKit/UITextView.h>
+#import <UIKit/UIImageView.h>
+#import <UIKit/UIKeyboard.h>
 #include <unistd.h>
 #import "MFBrowser.h"
 #import "MSAppLauncher.h"
@@ -55,7 +58,8 @@
 	_application = app;
 	
 	//Setup fileview table
-    _fileviewTable = [[UITable alloc] initWithFrame: CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height)];
+	_fileviewTableRect = CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height);
+    _fileviewTable = [[UITable alloc] initWithFrame: _fileviewTableRect];
     _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MobileFinder" identifier: @"Finder" width: rect.size.width];
 	[_fileviewTable addTableColumn: _fileviewTableCol]; 
     [_fileviewTable setDataSource: self];
@@ -184,7 +188,7 @@
 				}				
 				
 				//Launch application
-				if (appID != nil && appID != @"com.apple.springboard")
+				if (appID != nil)
 					[MSAppLauncher launchApplication: appID withApplication: _application];
 			}
 		}
@@ -202,7 +206,9 @@
 			//TODO: Allow cancelation of execution
 			system([absolutePath fileSystemRepresentation]);
 		}	
-		else if ([extension isEqualToString: @"txt"])
+		else if (
+			[extension isEqualToString: @"txt"] ||
+			[extension isEqualToString: @"plist"])
 		{
 			//TODO: Dynamic prefs for strings			
 			[MSAppLauncher launchApplication: @"com.google.code.MobileTextEdit" 
@@ -212,156 +218,17 @@
 				withLaunchingAppID: @"com.googlecode.MobileFinder"
 				withLaunchingAppBundlePath: @"/Applications/Finder.app"];				
 		}
-		else if ([extension isEqualToString: @"plist"])
+		else if ([extension isEqualToString: @"png"])
 		{
 			//TODO: Dynamic prefs for strings			
-			[MSAppLauncher launchApplication: @"com.google.code.MobileTextEdit" 
-				withAppBundlePath: @"/Applications/TextEdit.app"
-				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
-				withApplication: _application
-				withLaunchingAppID: @"com.googlecode.MobileFinder"
-				withLaunchingAppBundlePath: @"/Applications/Finder.app"];				
-		}
-		else if ([extension isEqualToString: @"tst"])
-		{
-			//TODO: Dynamic prefs for strings			
-			[MSAppLauncher launchApplication: @"com.googlecode.MobileFinder" 
+			[MSAppLauncher launchApplication: @"com.google.code.MobilePreview" 
 				withAppBundlePath: @"/Applications/Finder.app"
 				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
 				withApplication: _application
 				withLaunchingAppID: @"com.googlecode.MobileFinder"
 				withLaunchingAppBundlePath: @"/Applications/Finder.app"];
 		}
-		else if ([extension isEqualToString: @"png"] || [extension isEqualToString: @"gif"] || [extension isEqualToString: @"jpg"])
-		{
-			//TODO: Dynamic prefs for strings			
-			[MSAppLauncher launchApplication: @"com.google.code.MobilePreview" 
-				withAppBundlePath: @"/Applications/Preview.app"
-				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
-				withApplication: _application
-				withLaunchingAppID: @"com.googlecode.MobileFinder"
-				withLaunchingAppBundlePath: @"/Applications/Finder.app"];
-		}
 	}
-}
-
-- (void) changeDirectoryToRoot
-{
-	[self openPath: @"/"];
-}
-
-- (void) changeDirectoryToLast
-{
-	[self openPath: @"../"];
-}
-
-- (void) changeDirectoryToHome
-{
-	[self openPath: NSHomeDirectory()];
-}
-
-- (void) changeDirectoryToApplications
-{
-	[self openPath: @"/Applications"];
-}
-
-- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
-{
-	//Ensure absolute paths
-	srcPath = [self absolutePath: srcPath];
-	dstPath = [self absolutePath: dstPath];
-	
-	//Get source file attributes
-	BOOL srcPathIsDirectory;
-	BOOL srcPathExsists = [_fileManager fileExistsAtPath: srcPath isDirectory: &srcPathIsDirectory];
-	BOOL srcPathIsReadable = [_fileManager isReadableFileAtPath: srcPath];
-	
-	//Get destination file attributes
-	BOOL dstPathIsDirectory;
-	BOOL dstPathExsists = [_fileManager fileExistsAtPath: dstPath isDirectory: &dstPathIsDirectory];	
-	//If the destination path isn't a directory, get it's parent
-	NSString* dstDirPath;
-	if (dstPathIsDirectory)
-	{
-		dstDirPath = [[NSString alloc] initWithString: dstPath];
-		dstPath = [dstDirPath stringByAppendingPathComponent: [srcPath lastPathComponent]];
-	}
-	else
-	{
-		dstDirPath = [dstPath stringByDeletingLastPathComponent];
-		dstPathExsists = FALSE;	
-	}
-	BOOL dstPathIsWritable = [_fileManager isReadableFileAtPath: dstPath];
-	BOOL dstPathIsDeletable = [_fileManager isDeletableFileAtPath: dstPath];	
-	BOOL dstDirIsDirectory;
-	BOOL dstDirExsists = [_fileManager fileExistsAtPath: dstDirPath isDirectory: &dstDirIsDirectory];	
-	BOOL dstDirIsWritable = [_fileManager isWritableFileAtPath: dstDirPath];
-	
-	//TODO: error needed
-	if (dstDirIsDirectory == FALSE || dstDirExsists == FALSE || dstDirIsWritable == FALSE)
-		return;
-	
-	//TODO: dstPathExsists seems to always be true!	
-	//if (dstPathExsists)
-	//{
-		//TODO: Implement this!
-				
-	//}
-	//else
-	//{
-		BOOL operationSuccess;
-		if (move == TRUE)
-		{
-			//operationSuccess = [_fileManager movePath: srcPath toPath: dstPath handler: nil];
-			//[[NSFileManager defaultManager] movePath: @"/Test" toPath: @"/System/Test" handler: nil];
-			
-			//HACK: Above statements crash program.  Use system call to move file
-			NSString* moveCommand = [[[[[NSString string]
-				stringByAppendingString: @"/bin/mv "] 
-				stringByAppendingString: srcPath]
-				stringByAppendingString: @" "]
-				stringByAppendingString: dstDirPath];
-			system([moveCommand UTF8String]);
-			usleep(10);	
-		}
-		else
-		{
-			//operationSuccess = [_fileManager copyPath: srcPath toPath: dstPath handler: nil];
-			
-			//HACK: Above statement crashes program.  Use system call to copy file
-			NSString* copyCommand = [[[[[NSString string]
-				stringByAppendingString: @"/bin/cp -R "] 
-				stringByAppendingString: srcPath]
-				stringByAppendingString: @" "]
-				stringByAppendingString: dstDirPath];
-			system([copyCommand UTF8String]);
-			usleep(10);	
-		}
-		
-		//TODO: error on failed operation
-		[self refreshFileView];
-	//}
-}
-
-- (void) makeDirectoryAtPath: (NSString*)path
-{
-	BOOL operationSuccess = [_fileManager createDirectoryAtPath: path attributes: nil];
-	//TODO: error on failed deletion
-	[self refreshFileView];
-}
-
-- (void) makeFileAtPath: (NSString*)path
-{
-	BOOL operationSuccess = [_fileManager createFileAtPath: path contents: nil attributes:nil];
-	//TODO: error on failed deletion
-	[self refreshFileView];
-}
-
-- (void) deletePath: path
-{
-	BOOL operationSuccess = [_fileManager removeFileAtPath: path handler: nil];
-	//TODO: error on failed deletion
-	[self refreshFileView];
 }
 
 - (UIImage*) determineFileIcon: (NSString*) path
@@ -391,6 +258,16 @@
 	if (isDirectory == TRUE)
 		return [UIImage applicationImageNamed: @"Folder.png"];
 	
+	//Check file extensions for an image match
+	if ([extension isEqualToString: @"txt"])
+		return [UIImage applicationImageNamed: @"Text.png"];
+	if ([extension isEqualToString: @"xml"])
+		return [UIImage applicationImageNamed: @"XML.png"];
+	if ([extension isEqualToString: @"png"])
+		return [UIImage applicationImageNamed: @"PNG.png"];
+	if ([extension isEqualToString: @"plist"])
+		return [UIImage applicationImageNamed: @"XML.png"];
+	
 	//Executables
 	if (isExecutable)
 		return [UIImage applicationImageNamed: @"Executable.png"];	
@@ -399,6 +276,152 @@
 		
 	//Special icon for file not found.  Return default.
 	return [UIImage applicationImageNamed: @"File.png"];
+}
+
+- (void) changeDirectoryToRoot
+{
+	[self openPath: @"/"];
+}
+
+- (void) changeDirectoryToLast
+{
+	[self openPath: @"../"];
+}
+
+- (void) changeDirectoryToHome
+{
+	[self openPath: NSHomeDirectory()];
+}
+
+- (void) changeDirectoryToApplications
+{
+	[self openPath: @"/Applications"];
+}
+
+- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
+{
+	//Ensure absolute paths
+	srcPath = [[NSString alloc] initWithString: [self absolutePath: srcPath]];
+	dstPath = [[NSString alloc] initWithString: [self absolutePath: dstPath]];
+	
+	//TODO: Test this well
+	BOOL operationSuccess;
+	if (move == TRUE)
+	{
+		//operationSuccess = [_fileManager movePath: srcPath toPath: dstPath handler: nil];
+		//[[NSFileManager defaultManager] movePath: @"/Test" toPath: @"/System/Test" handler: nil];
+		
+		//HACK: Above statements crash program.  Use system call to move file
+		NSString* moveCommand = [[[[[NSString string]
+			stringByAppendingString: @"/bin/mv "] 
+			stringByAppendingString: srcPath]
+			stringByAppendingString: @" "]
+			stringByAppendingString: dstPath];
+		system([moveCommand UTF8String]);
+		usleep(10);	
+	}
+	else
+	{
+		//operationSuccess = [_fileManager copyPath: srcPath toPath: dstPath handler: nil];
+		
+		//HACK: Above statement crashes program.  Use system call to copy file
+		NSString* copyCommand = [[[[[NSString string]
+			stringByAppendingString: @"/bin/cp -R "] 
+			stringByAppendingString: srcPath]
+			stringByAppendingString: @" "]
+			stringByAppendingString: dstPath];
+		system([copyCommand UTF8String]);
+		usleep(10);	
+	}
+	
+	//TODO: error on failed operation
+	[self refreshFileView];
+}
+
+- (void) makeDirectoryAtPath: (NSString*)path
+{
+	BOOL operationSuccess = [_fileManager createDirectoryAtPath: path attributes: nil];
+	//TODO: error on failed deletion
+	[self refreshFileView];
+}
+
+- (void) makeFileAtPath: (NSString*)path
+{
+	BOOL operationSuccess = [_fileManager createFileAtPath: path contents: nil attributes:nil];
+	//TODO: error on failed deletion
+	[self refreshFileView];
+}
+
+- (void) deletePath: (NSString*)path
+{
+	BOOL operationSuccess = [_fileManager removeFileAtPath: path handler: nil];
+	//TODO: error on failed deletion
+	[self refreshFileView];
+}
+
+- (void) beginRenamePath: (NSString*)path
+{
+	//TODO: select cell for path if not already selected (not needed for MobileFinder, but would be needed for other apps)
+	
+	//Get selected cell
+	UIImageAndTextTableCell* selectedCell = [_fileviewCells objectAtIndex: [_fileviewTable selectedRow]];
+	if (selectedCell == nil)
+		return;
+	NSString* selectedFilename = [_fileviewCellFilenames objectAtIndex: [_fileviewTable selectedRow]];
+	_renamingFilename = selectedFilename;
+	
+	//Create keyboard to rename file with
+	//TODO: Make return button finish filename
+	CGRect kbRect;
+	kbRect.size = CGSizeMake(_fileviewTableRect.size.width, 216.0f);//[UIKeyboard defaultSize];
+	kbRect.origin.x = _fileviewTableRect.origin.y;
+	kbRect.origin.y = _fileviewTableRect.origin.y + _fileviewTableRect.size.height - kbRect.size.height;
+	_keyboard = [[UIKeyboard alloc] initWithFrame: kbRect];
+	[_keyboard hideSuggestionBar];
+	
+	//Create text box with icon to rename the file with
+	CGRect textFieldRect = _fileviewTableRect;
+	textFieldRect.size.height = _fileviewTableRect.size.height - kbRect.size.height;
+	_filenameTextField = [[UITextView alloc] initWithFrame: textFieldRect];
+	[_filenameTextField setText: selectedFilename];
+	/*
+	CGRect textFieldIconRect = textFieldRect;
+	textFieldIconRect.origin.x = 0.0f;
+	textFieldIconRect.origin.y = 0.0f;
+	textFieldIconRect.size.width = 64.0f;
+	CGRect textFieldTextRect = textFieldIconRect;
+	textFieldTextRect.size.width = textFieldRect.size.width - textFieldIconRect.size.width;
+	textFieldTextRect.origin.x = textFieldIconRect.origin.x + textFieldIconRect.size.width;
+	_filenameTextField = [[UIView alloc] initWithFrame: textFieldRect];
+	UIImageView* textFieldIcon = [[UIImageView alloc] initWithFrame: textFieldIconRect];
+	[textFieldIcon setImage: [selectedCell image]];
+	UITextView* textFieldText = [[UITextView alloc] initWithFrame: textFieldTextRect];
+	[textFieldText setText: selectedFilename];
+	[_filenameTextField addSubview: textFieldIcon];
+	[_filenameTextField addSubview: textFieldText];
+	*/
+	
+	//Add to view
+	[self addSubview: _filenameTextField];
+	[self addSubview: _keyboard];
+	[_fileviewTable removeFromSuperview];
+}
+
+- (void) endRenameSaving: (BOOL)save
+{
+	//Verify typed filename
+	NSString* newFilename = [[[_filenameTextField text] componentsSeparatedByString: @"\n"] lastObject];
+
+	//Save file
+	if (save)
+	{
+		[self sendSrcPath: _renamingFilename toDstPath: newFilename byMoving: TRUE];
+	}
+	
+	//Remove keyboard and filename textview
+	[_keyboard removeFromSuperview];
+	[_filenameTextField removeFromSuperview];
+	[self addSubview: _fileviewTable];
 }
 
 - (UITableCell*) table: (UITable*)table cellForRow: (int)row column: (int)col
