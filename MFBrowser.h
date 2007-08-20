@@ -9,6 +9,9 @@
 	Thanks: iPhone Dev Team
 	Compilation Toolchain and Hello World Applicaiton
 	
+	Thanks: Launcher.app Dev Team
+	Basic idea for application launch
+	
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; version 2
