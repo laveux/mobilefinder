@@ -9,6 +9,9 @@
 	Thanks: iPhone Dev Team
 	Compilation Toolchain and Hello World Applicaiton
 	
+	Thanks: Launcher.app Dev Team
+	Basic idea for application launch
+	
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; version 2
@@ -24,15 +27,15 @@
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
-#import <Foundation/NSTask.h>
+#import <CoreFoundation/CoreFoundation.h>
 #import <UIKit/CDStructures.h>
 #import <UIKit/UIApplication.h>
 #import <UIKit/UIPushButton.h>
 #import <UIKit/UIThreePartButton.h>
 #import <UIKit/UINavigationBar.h>
 #import <UIKit/UIWindow.h>
+#import <UIKit/UIView.h>
 #import <UIKit/UIView-Hierarchy.h>
 #import <UIKit/UIHardware.h>
 #import <UIKit/UITable.h>
@@ -99,10 +102,12 @@
 	_delegate = delegate;
 	
 	//TODO: Better way to initialize this?
-	//Notify delegate of current statuses	
-	[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
+	//Notify delegate of current statuses
+	if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])	
+		[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
 	if (_selectedPath != nil)
-		[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
+		if ([_delegate respondsToSelector: @selector(browserCurrentSelectedPathChanged:toPath:)])
+			[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
 }
 
 - (void) refreshFileView
@@ -144,7 +149,8 @@
 - (void) selectPath: (NSString*)path
 {
 	_selectedPath = [[NSString alloc] initWithString: path];
-	[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
+	if ([_delegate respondsToSelector: @selector(browserCurrentSelectedPathChanged:toPath:)])	
+		[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
 	
 	//TODO: Select the table cell in the UI or make this function private
 }
@@ -162,7 +168,8 @@
 		[self refreshFileView];		
 	
 		//Let delegate know of directory change
-		[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
+		if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])
+			[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
 		
 		//Execute application if this is an application
 		//TODO: Need to save current position in finder before execute
@@ -181,7 +188,8 @@
 				{					
 					if ([key isEqualToString: @"CFBundleIdentifier"])
 					{
-						[_delegate browserCurrentDirectoryChanged: self toPath: key];
+						if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])
+							[_delegate browserCurrentDirectoryChanged: self toPath: key];
 						appID = [plistDict valueForKey: key];
 						break;
 					}
@@ -251,31 +259,31 @@
 		if ([_fileManager isReadableFileAtPath: appIconPath])
 			return [UIImage imageAtPath: appIconPath];
 		else
-			return [UIImage applicationImageNamed: @"Application.png"];
+			return [UIImage applicationImageNamed: @"Application_64x64.png"];
 	}
 	
 	//Check if file is a directory
 	if (isDirectory == TRUE)
-		return [UIImage applicationImageNamed: @"Folder.png"];
+		return [UIImage applicationImageNamed: @"Folder_64x64.png"];
 	
 	//Check file extensions for an image match
 	if ([extension isEqualToString: @"txt"])
-		return [UIImage applicationImageNamed: @"Text.png"];
+		return [UIImage applicationImageNamed: @"Text_64x64.png"];
 	if ([extension isEqualToString: @"xml"])
-		return [UIImage applicationImageNamed: @"XML.png"];
+		return [UIImage applicationImageNamed: @"XML_64x64.png"];
 	if ([extension isEqualToString: @"png"])
-		return [UIImage applicationImageNamed: @"PNG.png"];
+		return [UIImage applicationImageNamed: @"PNG_64x64.png"];
 	if ([extension isEqualToString: @"plist"])
-		return [UIImage applicationImageNamed: @"XML.png"];
+		return [UIImage applicationImageNamed: @"XML_64x64.png"];
 	
 	//Executables
 	if (isExecutable)
-		return [UIImage applicationImageNamed: @"Executable.png"];	
+		return [UIImage applicationImageNamed: @"Executable_64x64.png"];	
 	
 	//TODO: More icons!
 		
 	//Special icon for file not found.  Return default.
-	return [UIImage applicationImageNamed: @"File.png"];
+	return [UIImage applicationImageNamed: @"File_64x64.png"];
 }
 
 - (void) changeDirectoryToRoot
@@ -438,10 +446,7 @@
 
 - (int) numberOfRowsInTable: (UITable*)table
 {
-	if (table == _fileviewTable)
-		return [_fileviewCells count];
-	else
-		return 0;
+	return [_fileviewCells count];
 }
 
 - (void) tableRowSelected: (NSNotification*) notification 

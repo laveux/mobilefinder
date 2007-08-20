@@ -9,6 +9,9 @@
 	Thanks: iPhone Dev Team
 	Compilation Toolchain and Hello World Applicaiton
 	
+	Thanks: NES.app Dev Team
+	Basic idea for settings pane
+	
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; version 2
@@ -27,9 +30,19 @@
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <UIKit/UIView.h>
+#import <UIKit/UITableColumn.h>
+#import <UIKit/UIPreferencesTable.h>
+#import <UIKit/UIPreferencesTableCell.h>
+#import <UIKit/UIPreferencesTextTableCell.h>
 
 @interface MFSettings : UIView
 {
+	UIPreferencesTable* _prefsTable;
+	UITableColumn* _prefsTableColumn;
+	
+	UIPreferencesTableCell* _startGroup;
+	UIPreferencesTextTableCell* _startDirCell;
+	
 	id _delegate;
 }
 - (id) initWithFrame: (struct CGRect)rect;
