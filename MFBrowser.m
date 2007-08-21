@@ -48,17 +48,18 @@
 #import <UIKit/UIKeyboard.h>
 #include <unistd.h>
 #import "MFBrowser.h"
-#import "MSAppLauncher.h"
+#import "MobileStudio/MSAppLauncher.h"
 
 @implementation MFBrowser : UIView
 
-- (id) initWithApplication: (UIApplication*) app andFrame: (struct CGRect)rect
+- (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect
 {
 	//Init view with frame rect
 	[super initWithFrame: rect];
 	
 	//Save application object for launching other apps
 	_application = app;
+	_applicationID = appID;
 	
 	//Setup fileview table
 	_fileviewTableRect = CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height);
@@ -73,7 +74,7 @@
 	
 	//List root
 	_fileManager = [NSFileManager defaultManager];
-	[self changeDirectoryToHome];
+	[self changeDirectoryToApplications];
 	
 	return self;
 }
@@ -83,8 +84,8 @@
 	if ([path isAbsolutePath] || [[path stringByDeletingLastPathComponent] isEqualToString: @"/"])
 		return [[NSString alloc] initWithString: path];
 	else
-		return [[NSString alloc] initWithString: [
-			[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path]];		
+		return [[NSString alloc] initWithString: 
+			[[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path]];		
 }
 
 - (NSString*) currentDirectory
@@ -195,9 +196,9 @@
 					}
 				}				
 				
-				//Launch application
+				//Launch application by the regular method
 				if (appID != nil)
-					[MSAppLauncher launchApplication: appID withApplication: _application];
+					[_application launchApplicationWithIdentifier: appID suspended: NO];
 			}
 		}
 	}
@@ -220,21 +221,17 @@
 		{
 			//TODO: Dynamic prefs for strings			
 			[MSAppLauncher launchApplication: @"com.google.code.MobileTextEdit" 
-				withAppBundlePath: @"/Applications/TextEdit.app"
 				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
-				withApplication: _application
-				withLaunchingAppID: @"com.googlecode.MobileFinder"
-				withLaunchingAppBundlePath: @"/Applications/Finder.app"];				
+				withLaunchingAppID: _applicationID
+				withApplication: _application];				
 		}
 		else if ([extension isEqualToString: @"png"])
 		{
 			//TODO: Dynamic prefs for strings			
 			[MSAppLauncher launchApplication: @"com.google.code.MobilePreview" 
-				withAppBundlePath: @"/Applications/Finder.app"
 				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
-				withApplication: _application
-				withLaunchingAppID: @"com.googlecode.MobileFinder"
-				withLaunchingAppBundlePath: @"/Applications/Finder.app"];
+				withLaunchingAppID: _applicationID
+				withApplication: _application];
 		}
 	}
 }

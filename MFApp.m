@@ -27,6 +27,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/CDStructures.h>
+#import <UIKit/UIApplication.h>
 #import <UIKit/UIPushButton.h>
 #import <UIKit/UIThreePartButton.h>
 #import <UIKit/UINavigationBar.h>
@@ -41,12 +42,14 @@
 #import "MFApp.h"
 #import "MFBrowser.h"
 #import "MFSettings.h"
+#import "MobileStudio/MSAppLauncher.h"
 
 @implementation MFApp : UIApplication
 
 - (void) initApplication
 {   
-	//int screenOrientation = [UIHardware deviceOrientation: YES];
+	//Set applicationID
+	_applicationID = @"com.googlecode.MobileFinder";
 	
 	//Initialize window
 	_window = [[UIWindow alloc] initWithContentRect: [UIHardware fullScreenApplicationContentRect]];
@@ -80,7 +83,28 @@
 	float deleteButtonWidth = 60.0f;
 	float renameButtonWidth = 60.0f;
 	float newButtonWidth = 60.0f;
-	  
+	
+	//Get LaunchInfo argument, if any
+	NSDictionary* launchInfo = [MSAppLauncher readLaunchInfoForAppID: _applicationID
+		withApplication: self
+		deletingLaunchPList: TRUE];
+	if (launchInfo != nil)
+	{
+		
+	}		
+	
+	//Setup the settings pane (and load settings)
+	NSString* settingsPath = [[[[self userLibraryDirectory] 
+		stringByAppendingPathComponent: @"Preferences"]
+		stringByAppendingPathComponent: _applicationID]
+		stringByAppendingPathExtension: @"plist"];
+	_settings = [[MFSettings alloc] initWithFrame: CGRectMake(
+		0.0f, 
+		navBarHeight, 
+		screenRect.size.width, screenRect.size.height - navBarHeight)
+		withSettingsPath: settingsPath];
+	[_settings setDelegate: self];
+	
 	//Setup navigation bar
 	/*
 		Navigation Bar Styles
@@ -173,20 +197,15 @@
 	[_fileOpBar addSubview: _newButton];
 		
 	//Setup the file browser
-	_browser = [[MFBrowser alloc] initWithApplication: self andFrame: CGRectMake(
-		0.0f, 
-		navBarHeight, 
-		screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
+	_browser = [[MFBrowser alloc] initWithApplication: self 
+		withAppID: _applicationID
+		withFrame: CGRectMake(
+			0.0f, 
+			navBarHeight, 
+			screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
 	[_browser setDelegate: self];
-	[_browser changeDirectoryToApplications];
-	
-	//Setup the settings pane
-	_settings = [[MFSettings alloc] initWithFrame: CGRectMake(
-		0.0f, 
-		navBarHeight, 
-		screenRect.size.width, screenRect.size.height - navBarHeight)];
-	[_settings setDelegate: self];
-	
+	[_browser openPath: [_settings startupDirPath]];
+			
 	//Make the browser active at start
 	[self makeBrowserActive];
 }
@@ -198,10 +217,12 @@
 	[_mainView addSubview: _fileOpBar];
 	[_finderButton setNavBarButtonStyle: 3];
 	[_settingsButton setNavBarButtonStyle: 0];
+	[_settings writeSettings];
 }
 
 - (void) makeSettingsActive
 {
+	[_settings readSettings];
 	[_browser removeFromSuperview];
 	[_fileOpBar removeFromSuperview];
 	[_mainView addSubview: _settings];

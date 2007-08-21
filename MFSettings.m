@@ -42,15 +42,14 @@
 @implementation MFSettings : UIView
 
 - (id) initWithFrame: (struct CGRect)rect
+	withSettingsPath: (NSString*)settingsPath
 {
 	//Init view with frame rect
 	[super initWithFrame: rect];
 	
 	//Setup preferences table
 	_prefsTable = [[UIPreferencesTable alloc] initWithFrame: CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height)];
-	_prefsTableColumn = [[UITableColumn alloc] initWithTitle: @"Settings" identifier: @"Settings" width: rect.size.width];
-	[_prefsTable addTableColumn: _prefsTableColumn]; 
-    [_prefsTable setDataSource: self];
+	[_prefsTable setDataSource: self];
     [_prefsTable setDelegate: self];
 	//[_prefsTable setRowHeight: 64.0f];
 	[_prefsTable reloadData];
@@ -63,21 +62,85 @@
     //float blueComponents[4] = {0.208, 0.482, 0.859, 1};
 
 	//Setup startup group
-	_startGroup = [[UIPreferencesTableCell alloc] init];
-	[_startGroup setTitle: @"Startup"];
-	_startDirCell = [[UIPreferencesTextTableCell alloc] init];	
-	[_startDirCell setTitle: @"Start Folder"];
-	[[_startDirCell textField] setText: @"/Applications"];
-	[_startDirCell setIcon: [UIImage applicationImageNamed: @"Folder_16x16.png"]];
-		
+	_startupGroup = [[UIPreferencesTableCell alloc] init];
+	[_startupGroup setTitle: @"Startup"];
+	_startupDirCell = [[UIPreferencesTextTableCell alloc] init];	
+	[_startupDirCell setTitle: @"Startup Folder"];
+	[_startupDirCell setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];
+	//[_startupDirCell setDelegate: self];
+	
+	//TODO: Show hidden files toggle
+	//TODO: Filetype associations
+	//TODO: Color settings
+	
 	[self addSubview: _prefsTable];
 	
+	//Read in settings from Settings.plist
+	_settingsPath = [[NSString alloc] initWithString: settingsPath];
+	[self readSettings];
+	
 	return self;
+}
+
+- (NSString*) startupDirPath
+{
+	return [[_startupDirCell textField] text];
 }
 
 - (void) setDelegate: (id)delegate
 {
 	_delegate = delegate;
+}
+
+- (void) readSettings
+{
+	NSLog(@"Reading settings from %@", _settingsPath);	
+	if ([[NSFileManager defaultManager] isReadableFileAtPath: _settingsPath] == FALSE)
+		NSLog(@"Read from %@ failed!", _settingsPath);
+	
+	NSDictionary* settingsDict = [NSDictionary dictionaryWithContentsOfFile: _settingsPath];
+	NSEnumerator* enumerator = [settingsDict keyEnumerator];
+	NSString* currKey;
+	while (currKey = [enumerator nextObject]) 
+	{					
+		if ([currKey isEqualToString: @"MFStartupDir"])
+		{
+			[[_startupDirCell textField] setText: [settingsDict valueForKey: currKey]];
+		}
+	}	
+}
+
+- (void) writeSettings
+{
+	NSLog(@"Writing settings to %@", _settingsPath);
+	
+	//Verify settings
+	//TODO: Error message on invalid setting
+	BOOL startDirIsDirectory;	
+	NSString* startDir = [[_startupDirCell textField] text];
+	if ([[NSFileManager defaultManager] fileExistsAtPath: startDir isDirectory: &startDirIsDirectory] == FALSE || 
+		startDirIsDirectory == FALSE)
+	{
+		NSLog(@"Path for start dir \"%@\" is invalid. Using \"/Applications\"", startDir);
+		startDir = [[NSString alloc] initWithString: @"/Applications"]; 
+	}
+	else
+		NSLog(@"Start dir: \"%@\"", startDir);
+	
+	//Build settings dictionary
+	NSDictionary* settingsDict = [[NSDictionary alloc] initWithObjectsAndKeys:
+		startDir, @"MFStartupDir",
+		nil];
+	
+	//Seralize settings dictionary
+	NSString* error;
+	NSData* rawPList = [NSPropertyListSerialization dataFromPropertyList: settingsDict		
+		format: NSPropertyListXMLFormat_v1_0
+		errorDescription: &error];
+	
+	//Write settings plist file
+	[rawPList writeToFile: _settingsPath atomically: YES];
+	NSLog(@"Settings written to %@", _settingsPath);
 }
 
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
@@ -101,8 +164,8 @@
 {
 	switch (group)
 	{
-		case 0: return _startGroup;
-		case 1: return _startGroup;
+		case 0: return _startupGroup;
+		case 1: return _startupGroup;
 		default: return nil;
 	}
 } 
@@ -124,11 +187,11 @@
 {
 	switch (group)
 	{
-		case 0: return _startGroup;
+		case 0: return _startupGroup;
 		case 1:
 			switch (row)
 			{
-				case 0:	return _startDirCell;
+				case 0:	return _startupDirCell;
 			}
 	}
 }

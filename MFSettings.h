@@ -38,14 +38,17 @@
 @interface MFSettings : UIView
 {
 	UIPreferencesTable* _prefsTable;
-	UITableColumn* _prefsTableColumn;
+	UIPreferencesTableCell* _startupGroup;
+	UIPreferencesTextTableCell* _startupDirCell;
 	
-	UIPreferencesTableCell* _startGroup;
-	UIPreferencesTextTableCell* _startDirCell;
-	
+	NSString* _settingsPath;
 	id _delegate;
 }
-- (id) initWithFrame: (struct CGRect)rect;
+- (id) initWithFrame: (struct CGRect)rect
+	withSettingsPath: (NSString*)settingsPath;
+- (NSString*) startupDirPath;
 - (void) setDelegate: (id)delegate;
+- (void) readSettings;
+- (void) writeSettings;
 
 @end

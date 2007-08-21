@@ -4,7 +4,7 @@ LDFLAGS=-lobjc -framework CoreFoundation -framework Foundation -framework UIKit 
 
 all:	Finder install
 
-Finder:	MFMain.o MFApp.o MFBrowser.o MFSettings.o MSAppLauncher.o
+Finder:	MFMain.o MFApp.o MFBrowser.o MFSettings.o MobileStudio/MSAppLauncher.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
 %.o:	%.m
