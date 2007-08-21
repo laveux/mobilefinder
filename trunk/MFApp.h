@@ -33,6 +33,7 @@
 
 @interface MFApp : UIApplication
 {
+	NSString* _applicationID;
 	UIWindow* _window;
 	UIView* _mainView;
 	MFBrowser* _browser;

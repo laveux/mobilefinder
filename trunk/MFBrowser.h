@@ -46,6 +46,7 @@
 	NSMutableArray* _fileviewCellFilenames;
 	id _delegate;
 	UIApplication* _application;
+	NSString* _applicationID;
 	NSString* _selectedPath;
 	
 	//Used for rename feature
@@ -54,7 +55,7 @@
 	UITextView* _filenameTextField;
 	NSString* _renamingFilename;
 }
-- (id) initWithApplication: (UIApplication*) app andFrame: (struct CGRect)rect;
+- (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect;
 - (NSString*) absolutePath: (NSString*) path;
 - (NSString*) currentDirectory;
 - (NSString*) currentSelectedPath;
