@@ -34,12 +34,27 @@
 #import <UIKit/UIPreferencesTable.h>
 #import <UIKit/UIPreferencesTableCell.h>
 #import <UIKit/UIPreferencesTextTableCell.h>
+#import <UIKit/UISwitchControl.h>
 
 @interface MFSettings : UIView
 {
 	UIPreferencesTable* _prefsTable;
-	UIPreferencesTableCell* _startupGroup;
+	
+	UIPreferencesTableCell* _filesystemGroup;
 	UIPreferencesTextTableCell* _startupDirCell;
+	UIPreferencesTableCell* _showHiddenFilesCell;
+	UIPreferencesTableCell* _launchApplicationsCell;
+	UIPreferencesTableCell* _protectSystemFilesCell;
+	
+	UIPreferencesTableCell* _styleGroup;
+	UIPreferencesTableCell* _barStyleCell;
+	UIPreferencesTableCell* _buttonStyleCell;
+	UIPreferencesTableCell* _browserBackgroundCell;
+	UIPreferencesTableCell* _iconSizeCell;
+	
+	UISwitchControl* _showHiddenFilesSwitch;
+	UISwitchControl* _launchApplicationsSwitch;
+	UISwitchControl* _protectSystemFilesSwitch;
 	
 	NSString* _settingsPath;
 	id _delegate;
@@ -47,6 +62,9 @@
 - (id) initWithFrame: (struct CGRect)rect
 	withSettingsPath: (NSString*)settingsPath;
 - (NSString*) startupDirPath;
+- (BOOL) showHiddenFiles;
+- (BOOL) launchApplications;
+- (BOOL) protectSystemFiles;
 - (void) setDelegate: (id)delegate;
 - (void) readSettings;
 - (void) writeSettings;

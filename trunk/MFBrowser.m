@@ -72,6 +72,9 @@
 	[_fileviewTable reloadData];
 	[self addSubview: _fileviewTable];
 	
+	//Set preference defaults
+	_showHiddenFiles = FALSE;
+	
 	//List root
 	_fileManager = [NSFileManager defaultManager];
 	[self changeDirectoryToApplications];
@@ -111,6 +114,12 @@
 			[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
 }
 
+- (void) setShowHiddenFiles: (BOOL)showHiddenFiles
+{
+	_showHiddenFiles = showHiddenFiles;
+	[self refreshFileView];
+}
+
 - (void) refreshFileView
 {
 	//Make sure we have a new, empty fileviewCells
@@ -130,17 +139,20 @@
 		//Don't decend into directories
 		[dirEnumerator skipDescendents];	
 		
-		//Create table cell for filename
+		if (_showHiddenFiles == TRUE || [filename characterAtIndex: 0] != '.')
+		{
+			//Create table cell for filename
 			//TODO: Nicer filename, or raw?
-		UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
-		[cell setTitle: filename];	
-		[cell setImage: [self determineFileIcon: filename]];
+			UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
+			[cell setTitle: filename];	
+			[cell setImage: [self determineFileIcon: filename]];
 					
-		//Add filename and cell to collections
-		//Cells and filenames are stored seperately to allow the displayed name to differ from the actual name
-		//(eg. Calculator.app -> Calculator)
-		[_fileviewCells addObject: cell];
-		[_fileviewCellFilenames addObject: filename];
+			//Add filename and cell to collections
+			//Cells and filenames are stored seperately to allow the displayed name to differ from the actual name
+			//(eg. Calculator.app -> Calculator)
+			[_fileviewCells addObject: cell];
+			[_fileviewCellFilenames addObject: filename];
+		}
 	}
 	
 	//Refresh the fileview table
