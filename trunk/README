@@ -22,4 +22,6 @@ Compiling From Sources (Optional!)
 4. Compile MobileFinder
 	cd <MobileFinder-source-dir>
 	make
-5. Follow Install Instructions above
+5. mkdir Finder.app
+6. Copy Finder and all PNG images into Finder.app
+7. Follow Install Instructions above
