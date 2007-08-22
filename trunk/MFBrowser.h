@@ -49,6 +49,8 @@
 	NSString* _applicationID;
 	NSString* _selectedPath;
 	BOOL _showHiddenFiles;
+	BOOL _launchApplications;
+	BOOL _protectSystemFiles;
 	
 	//Used for rename feature
 	CGRect _fileviewTableRect;
@@ -60,8 +62,13 @@
 - (NSString*) absolutePath: (NSString*) path;
 - (NSString*) currentDirectory;
 - (NSString*) currentSelectedPath;
+- (BOOL) launchApplications;
+- (BOOL) showHiddenFiles;
+- (BOOL) protectSystemFiles;
 - (void) setDelegate: (id)delegate;
+- (void) setLaunchApplications: (BOOL)launchApplications;
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
+- (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
 - (void) refreshFileView;
 - (void) selectPath: (NSString*)path;
 - (void) openPath: (NSString*)path;

@@ -46,11 +46,11 @@
 	UIPreferencesTableCell* _launchApplicationsCell;
 	UIPreferencesTableCell* _protectSystemFilesCell;
 	
-	UIPreferencesTableCell* _styleGroup;
-	UIPreferencesTableCell* _barStyleCell;
-	UIPreferencesTableCell* _buttonStyleCell;
-	UIPreferencesTableCell* _browserBackgroundCell;
-	UIPreferencesTableCell* _iconSizeCell;
+	//UIPreferencesTableCell* _styleGroup;
+	//UIPreferencesTableCell* _barStyleCell;
+	//UIPreferencesTableCell* _buttonStyleCell;
+	//UIPreferencesTableCell* _browserBackgroundCell;
+	//UIPreferencesTableCell* _iconSizeCell;
 	
 	UISwitchControl* _showHiddenFilesSwitch;
 	UISwitchControl* _launchApplicationsSwitch;

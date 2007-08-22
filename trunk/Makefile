@@ -13,5 +13,5 @@ Finder:	MFMain.o MFApp.o MFBrowser.o MFSettings.o MobileStudio/MSAppLauncher.o
 install:
 		cp -f Finder ./Finder.app
 clean:
-		rm -f *.o MobileFinder
+		rm -f *.o MobileFinder MobileStudio/*.o
 
