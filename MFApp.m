@@ -217,7 +217,11 @@
 	[_mainView addSubview: _fileOpBar];
 	[_finderButton setNavBarButtonStyle: 3];
 	[_settingsButton setNavBarButtonStyle: 0];
+	
+	//Update settings
+	//TODO: This should be done here?
 	[_settings writeSettings];
+	[_browser setShowHiddenFiles: [_settings showHiddenFiles]];
 }
 
 - (void) makeSettingsActive

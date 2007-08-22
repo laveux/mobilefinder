@@ -48,6 +48,7 @@
 	UIApplication* _application;
 	NSString* _applicationID;
 	NSString* _selectedPath;
+	BOOL _showHiddenFiles;
 	
 	//Used for rename feature
 	CGRect _fileviewTableRect;
@@ -60,6 +61,7 @@
 - (NSString*) currentDirectory;
 - (NSString*) currentSelectedPath;
 - (void) setDelegate: (id)delegate;
+- (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
 - (void) refreshFileView;
 - (void) selectPath: (NSString*)path;
 - (void) openPath: (NSString*)path;

@@ -32,11 +32,14 @@
 #import <UIKit/CDStructures.h>
 #import <UIKit/UIView.h>
 #import <UIKit/UIView-Hierarchy.h>
+#import <UIKit/UITable.h>
 #import <UIKit/UIPreferencesTable.h>
 #import <UIKit/UIPreferencesTableCell.h>
 #import <UIKit/UIPreferencesTextTableCell.h>
 #import <UIKit/UITextField.h>
 #import <UIKit/UIImage.h>
+#import <UIKit/UISliderControl.h>
+#import <UIKit/UISwitchControl.h>
 #import "MFSettings.h"
 
 @implementation MFSettings : UIView
@@ -61,17 +64,42 @@
     //float grayComponents[4] = {0.85, 0.85, 0.85, 1};
     //float blueComponents[4] = {0.208, 0.482, 0.859, 1};
 
-	//Setup startup group
-	_startupGroup = [[UIPreferencesTableCell alloc] init];
-	[_startupGroup setTitle: @"Startup"];
+	CGRect switchRect = CGRectMake(200.0f, 9.0f, 320.0f - 200.0f, 32.0f);//[_prefsTable rowHeight]);
+	
+	//Setup filesystem group
+	_filesystemGroup = [[UIPreferencesTableCell alloc] init];
+	[_filesystemGroup setTitle: @"Filesystem"];
 	_startupDirCell = [[UIPreferencesTextTableCell alloc] init];	
-	[_startupDirCell setTitle: @"Startup Folder"];
-	[_startupDirCell setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];
-	//[_startupDirCell setDelegate: self];
+	[_startupDirCell setTitle: @"Startup"];
+	[_startupDirCell setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];	
+	_showHiddenFilesCell = [[UIPreferencesTableCell alloc] init];
+	[_showHiddenFilesCell setTitle: @"Show Hidden Files"];
+	_showHiddenFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_showHiddenFilesCell addSubview: _showHiddenFilesSwitch];
+	_launchApplicationsCell = [[UIPreferencesTableCell alloc] init];
+	[_launchApplicationsCell setTitle: @"Application Launch"];
+	_launchApplicationsSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_launchApplicationsCell addSubview: _launchApplicationsSwitch];
+	_protectSystemFilesCell = [[UIPreferencesTableCell alloc] init];
+	[_protectSystemFilesCell setTitle: @"Protect System Files"];
+	_protectSystemFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_protectSystemFilesCell addSubview: _protectSystemFilesSwitch];
+	
+	//Setup styles group
+	_styleGroup = [[UIPreferencesTableCell alloc] init];
+	[_styleGroup setTitle: @"Visuals"];	
+	_barStyleCell = [[UIPreferencesTableCell alloc] init];
+	[_barStyleCell setTitle: @"Bar Style"];
+	_buttonStyleCell = [[UIPreferencesTableCell alloc] init];
+	[_buttonStyleCell setTitle: @"Button Style"];
+	_browserBackgroundCell = [[UIPreferencesTableCell alloc] init];
+	[_browserBackgroundCell setTitle: @"Background"];
+	_iconSizeCell = [[UIPreferencesTableCell alloc] init];
+	[_iconSizeCell setTitle: @"Icon Size"];
 	
 	//TODO: Show hidden files toggle
-	//TODO: Filetype associations
 	//TODO: Color settings
+	//TODO: Filetype associations
 	
 	[self addSubview: _prefsTable];
 	
@@ -87,6 +115,21 @@
 	return [[_startupDirCell textField] text];
 }
 
+- (BOOL) showHiddenFiles
+{
+	return [_showHiddenFilesSwitch value] == 1;
+}
+
+- (BOOL) launchApplications
+{
+	return TRUE;//[_launchApplicationsSwitch value] == 1;
+}
+
+- (BOOL) protectSystemFiles
+{
+	return TRUE;//[_protectSystemFilesSwitch value] == 1;
+}
+
 - (void) setDelegate: (id)delegate
 {
 	_delegate = delegate;
@@ -94,20 +137,31 @@
 
 - (void) readSettings
 {
+	//Set defaults
+	[[_startupDirCell textField] setText: @"/Applications"];
+	[_showHiddenFilesSwitch setValue: 0];
+	[_launchApplicationsSwitch setValue: 1];
+	[_protectSystemFilesSwitch setValue: 1];
+	
+	//Read in settings to replace defaults
 	NSLog(@"Reading settings from %@", _settingsPath);	
 	if ([[NSFileManager defaultManager] isReadableFileAtPath: _settingsPath] == FALSE)
-		NSLog(@"Read from %@ failed!", _settingsPath);
-	
-	NSDictionary* settingsDict = [NSDictionary dictionaryWithContentsOfFile: _settingsPath];
-	NSEnumerator* enumerator = [settingsDict keyEnumerator];
-	NSString* currKey;
-	while (currKey = [enumerator nextObject]) 
-	{					
-		if ([currKey isEqualToString: @"MFStartupDir"])
-		{
-			[[_startupDirCell textField] setText: [settingsDict valueForKey: currKey]];
+	{
+		NSLog(@"Read from %@ failed!  Using defaults.", _settingsPath);
+	}
+	else
+	{
+		NSDictionary* settingsDict = [NSDictionary dictionaryWithContentsOfFile: _settingsPath];
+		NSEnumerator* enumerator = [settingsDict keyEnumerator];
+		NSString* currKey;
+		while (currKey = [enumerator nextObject]) 
+		{					
+			if ([currKey isEqualToString: @"MFStartupDir"])
+			{
+				[[_startupDirCell textField] setText: [settingsDict valueForKey: currKey]];
+			}
 		}
-	}	
+	}
 }
 
 - (void) writeSettings
@@ -145,7 +199,7 @@
 
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
 {
-	return 2;
+	return 4;
 }
 
 - (int) preferencesTable: (UIPreferencesTable*)table 
@@ -154,7 +208,9 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 1;
+		case 1: return 4;
+		case 2: return 0;
+		case 3: return 4;
 		default: return 0;
     }
 }
@@ -164,8 +220,10 @@
 {
 	switch (group)
 	{
-		case 0: return _startupGroup;
-		case 1: return _startupGroup;
+		case 0: return _filesystemGroup;
+		case 1: return _filesystemGroup;
+		case 2: return _styleGroup;
+		case 3: return _styleGroup;
 		default: return nil;
 	}
 } 
@@ -177,6 +235,8 @@
 	{
 		case 0: return TRUE;
 		case 1: return FALSE;
+		case 2: return TRUE;
+		case 3: return FALSE;
 		default: return TRUE;
 	}
 }
@@ -187,12 +247,25 @@
 {
 	switch (group)
 	{
-		case 0: return _startupGroup;
+		case 0: return _filesystemGroup;
 		case 1:
 			switch (row)
 			{
 				case 0:	return _startupDirCell;
+				case 1: return _showHiddenFilesCell;
+				case 2: return _launchApplicationsCell;
+				case 3: return _protectSystemFilesCell;
 			}
+		case 2: return _styleGroup;
+		case 3:
+			switch (row)
+			{
+				case 0:	return _barStyleCell;
+				case 1:	return _buttonStyleCell;
+				case 2:	return _browserBackgroundCell;
+				case 3:	return _iconSizeCell;
+			}
+		default: return nil;
 	}
 }
 
@@ -201,11 +274,12 @@
 	inGroup: (int)group 
 	withProposedHeight: (float)proposed 
 {
-	float groupLabelBuffer = 12.0f;
+	float groupLabelBuffer = 16.0f;
 	
 	switch (group)
 	{
 		case 0: return proposed + groupLabelBuffer;
+		case 2:	return proposed + groupLabelBuffer;
 		default: return proposed;
 	}
 }
