@@ -10,3 +10,16 @@ Install Instructions:
 1. Jailbreak iPhone and install ssh/sftp (see http://iphone.fiveforty.net/wiki/index.php/How_to_Escape_Jail)
 2. Put Finder.app into /Applications on your iPhone using an sftp program (Cyberduck)
 3. Reboot your iPhone
+
+Compiling From Sources (Optional!)
+1. Install iPhone Toolchain (see http://iphone.fiveforty.net/wiki/index.php/Toolchain_Project)
+2. Download sources:
+	svn checkout http://mobilefinder.googlecode.com/svn/trunk/ mobilefinder
+3. Apply toolchain patch
+	cp toolchain-includes-patch.txt <toolchain-install-dir>/include
+	cd <toolchain-install-dir>/include
+	patch -p0 < toolchain-includes-patch.txt
+4. Compile MobileFinder
+	cd <MobileFinder-source-dir>
+	make
+5. Follow Install Instructions above

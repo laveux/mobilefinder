@@ -74,6 +74,8 @@
 	
 	//Set preference defaults
 	_showHiddenFiles = FALSE;
+	_launchApplications = TRUE;
+	_protectSystemFiles = TRUE;
 	
 	//List root
 	_fileManager = [NSFileManager defaultManager];
@@ -82,18 +84,21 @@
 	return self;
 }
 
-- (NSString*) absolutePath: (NSString*) path
+- (NSString*) absolutePath: (NSString*)path
 {
-	if ([path isAbsolutePath] || [[path stringByDeletingLastPathComponent] isEqualToString: @"/"])
-		return [[NSString alloc] initWithString: path];
-	else
-		return [[NSString alloc] initWithString: 
-			[[_fileManager currentDirectoryPath] stringByAppendingPathComponent: path]];		
+	NSString* straitPath = [path stringByStandardizingPath];	
+	if ([straitPath isAbsolutePath] == FALSE)
+	{
+		straitPath = [[self currentDirectory] stringByAppendingPathComponent: path];
+		straitPath = [path stringByStandardizingPath];
+	}
+	
+	return straitPath;
 }
 
 - (NSString*) currentDirectory
 {
-	return [_fileManager currentDirectoryPath];
+	return [[_fileManager currentDirectoryPath] stringByStandardizingPath];
 }
 
 - (NSString*) currentSelectedPath
@@ -101,23 +106,43 @@
 	return _selectedPath;
 }
 
+- (BOOL) launchApplications
+{
+	return _launchApplications;
+}
+
+- (BOOL) showHiddenFiles
+{
+	return _showHiddenFiles;
+}
+
+- (BOOL) protectSystemFiles
+{
+	return _protectSystemFiles;
+}
+
 - (void) setDelegate: (id)delegate;
 {
 	_delegate = delegate;
 	
-	//TODO: Better way to initialize this?
-	//Notify delegate of current statuses
-	if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])	
-		[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
-	if (_selectedPath != nil)
-		if ([_delegate respondsToSelector: @selector(browserCurrentSelectedPathChanged:toPath:)])
-			[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
+	[self openPath: [self currentDirectory]];
+}
+
+- (void) setLaunchApplications: (BOOL)launchApplications
+{
+	_launchApplications = launchApplications;
 }
 
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles
 {
 	_showHiddenFiles = showHiddenFiles;
 	[self refreshFileView];
+}
+
+- (void) setProtectSystemFiles: (BOOL)protectSystemFiles
+{
+	_protectSystemFiles = protectSystemFiles;
+	[self openPath: [self currentDirectory]];
 }
 
 - (void) refreshFileView
@@ -130,7 +155,7 @@
 	_fileviewCellFilenames = [[NSMutableArray alloc] init];
 	
 	//Get the directory listing for the specified path
-	NSDirectoryEnumerator* dirEnumerator = [_fileManager enumeratorAtPath: [_fileManager currentDirectoryPath]];
+	NSDirectoryEnumerator* dirEnumerator = [_fileManager enumeratorAtPath: [self currentDirectory]];
 	
 	//Create table cells for each file in the directory, and add them and their paths to the appropriate collections
 	NSString* filename;
@@ -169,10 +194,21 @@
 }
 
 - (void) openPath: (NSString*)path
-{		
+{
 	//Get path extension and absolute path
 	NSString* extension = [path pathExtension];
-	NSString* absolutePath = [self absolutePath: path];		
+	NSString* absolutePath = [self absolutePath: path];
+	
+	//Ensure that we are not entering a protected system file
+	if (_protectSystemFiles == TRUE)
+	{
+		if ([absolutePath hasPrefix: @"/Applications"] == FALSE &&
+			[absolutePath hasPrefix: NSHomeDirectory()] == FALSE)
+		{
+			[self openPath: NSHomeDirectory()];
+			return;
+		}
+	}	
 	
 	//Change to the specified path, if it is a directory
 	if ([_fileManager changeCurrentDirectoryPath: path])
@@ -182,11 +218,12 @@
 	
 		//Let delegate know of directory change
 		if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])
-			[_delegate browserCurrentDirectoryChanged: self toPath: [_fileManager currentDirectoryPath]];
+			[_delegate browserCurrentDirectoryChanged: self 
+				toPath: [[self currentDirectory] stringByStandardizingPath]];
 		
 		//Execute application if this is an application
 		//TODO: Need to save current position in finder before execute
-		if ([extension isEqualToString: @"app"])
+		if (_launchApplications == TRUE && [extension isEqualToString: @"app"])
 		{
 			//Check to see if the application directory has an Info.plist
 			NSString* infoPListPath = [path stringByAppendingPathComponent: @"Info.plist"];
@@ -201,8 +238,6 @@
 				{					
 					if ([key isEqualToString: @"CFBundleIdentifier"])
 					{
-						if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])
-							[_delegate browserCurrentDirectoryChanged: self toPath: key];
 						appID = [plistDict valueForKey: key];
 						break;
 					}
@@ -302,7 +337,13 @@
 
 - (void) changeDirectoryToLast
 {
-	[self openPath: @"../"];
+	//TODO: Select cell that contains current path
+	if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: NSHomeDirectory()])
+		[self changeDirectoryToApplications];
+	else if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: @"/Applications"])
+		[self changeDirectoryToApplications];
+	else
+		[self openPath: @"../"];
 }
 
 - (void) changeDirectoryToHome
@@ -401,22 +442,6 @@
 	textFieldRect.size.height = _fileviewTableRect.size.height - kbRect.size.height;
 	_filenameTextField = [[UITextView alloc] initWithFrame: textFieldRect];
 	[_filenameTextField setText: selectedFilename];
-	/*
-	CGRect textFieldIconRect = textFieldRect;
-	textFieldIconRect.origin.x = 0.0f;
-	textFieldIconRect.origin.y = 0.0f;
-	textFieldIconRect.size.width = 64.0f;
-	CGRect textFieldTextRect = textFieldIconRect;
-	textFieldTextRect.size.width = textFieldRect.size.width - textFieldIconRect.size.width;
-	textFieldTextRect.origin.x = textFieldIconRect.origin.x + textFieldIconRect.size.width;
-	_filenameTextField = [[UIView alloc] initWithFrame: textFieldRect];
-	UIImageView* textFieldIcon = [[UIImageView alloc] initWithFrame: textFieldIconRect];
-	[textFieldIcon setImage: [selectedCell image]];
-	UITextView* textFieldText = [[UITextView alloc] initWithFrame: textFieldTextRect];
-	[textFieldText setText: selectedFilename];
-	[_filenameTextField addSubview: textFieldIcon];
-	[_filenameTextField addSubview: textFieldText];
-	*/
 	
 	//Add to view
 	[self addSubview: _filenameTextField];
@@ -426,12 +451,12 @@
 
 - (void) endRenameSaving: (BOOL)save
 {
-	//Verify typed filename
-	NSString* newFilename = [[[_filenameTextField text] componentsSeparatedByString: @"\n"] lastObject];
-
 	//Save file
 	if (save)
 	{
+		//Verify typed filename
+		NSString* newFilename = [[[_filenameTextField text] componentsSeparatedByString: @"\n"] lastObject];
+
 		[self sendSrcPath: _renamingFilename toDstPath: newFilename byMoving: TRUE];
 	}
 	
@@ -463,7 +488,7 @@
 	//Get selected cell and filename
 	UIImageAndTextTableCell* selectedCell = [_fileviewCells objectAtIndex: [_fileviewTable selectedRow]];
 	NSString* selectedCellFilename = [_fileviewCellFilenames objectAtIndex: [_fileviewTable selectedRow]];
-	NSString* selectedPath = [[_fileManager currentDirectoryPath] stringByAppendingPathComponent: selectedCellFilename];
+	NSString* selectedPath = [[self currentDirectory] stringByAppendingPathComponent: selectedCellFilename];
 	
 	if (_selectedPath != nil && [selectedPath isEqualToString: _selectedPath])
 		[self openPath: selectedPath];

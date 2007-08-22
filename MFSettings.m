@@ -54,7 +54,6 @@
 	_prefsTable = [[UIPreferencesTable alloc] initWithFrame: CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height)];
 	[_prefsTable setDataSource: self];
     [_prefsTable setDelegate: self];
-	//[_prefsTable setRowHeight: 64.0f];
 	[_prefsTable reloadData];
 
 	//Create colors for controls
@@ -69,9 +68,9 @@
 	//Setup filesystem group
 	_filesystemGroup = [[UIPreferencesTableCell alloc] init];
 	[_filesystemGroup setTitle: @"Filesystem"];
+	[_filesystemGroup setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];	
 	_startupDirCell = [[UIPreferencesTextTableCell alloc] init];	
 	[_startupDirCell setTitle: @"Startup"];
-	[_startupDirCell setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];	
 	_showHiddenFilesCell = [[UIPreferencesTableCell alloc] init];
 	[_showHiddenFilesCell setTitle: @"Show Hidden Files"];
 	_showHiddenFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
@@ -86,8 +85,10 @@
 	[_protectSystemFilesCell addSubview: _protectSystemFilesSwitch];
 	
 	//Setup styles group
+	/*
 	_styleGroup = [[UIPreferencesTableCell alloc] init];
 	[_styleGroup setTitle: @"Visuals"];	
+	[_styleGroup setIcon: [UIImage applicationImageNamed: @"Finder_32x32.png"]];	
 	_barStyleCell = [[UIPreferencesTableCell alloc] init];
 	[_barStyleCell setTitle: @"Bar Style"];
 	_buttonStyleCell = [[UIPreferencesTableCell alloc] init];
@@ -96,14 +97,11 @@
 	[_browserBackgroundCell setTitle: @"Background"];
 	_iconSizeCell = [[UIPreferencesTableCell alloc] init];
 	[_iconSizeCell setTitle: @"Icon Size"];
-	
-	//TODO: Show hidden files toggle
-	//TODO: Color settings
-	//TODO: Filetype associations
-	
+	*/
+	//Put prefs table into settings pane
 	[self addSubview: _prefsTable];
 	
-	//Read in settings from Settings.plist
+	//Read in settings from settings plist
 	_settingsPath = [[NSString alloc] initWithString: settingsPath];
 	[self readSettings];
 	
@@ -117,17 +115,17 @@
 
 - (BOOL) showHiddenFiles
 {
-	return [_showHiddenFilesSwitch value] == 1;
+	return [_showHiddenFilesSwitch value] != 0;
 }
 
 - (BOOL) launchApplications
 {
-	return TRUE;//[_launchApplicationsSwitch value] == 1;
+	return [_launchApplicationsSwitch value] != 0;
 }
 
 - (BOOL) protectSystemFiles
 {
-	return TRUE;//[_protectSystemFilesSwitch value] == 1;
+	return [_protectSystemFilesSwitch value] != 0;
 }
 
 - (void) setDelegate: (id)delegate
@@ -144,12 +142,7 @@
 	[_protectSystemFilesSwitch setValue: 1];
 	
 	//Read in settings to replace defaults
-	NSLog(@"Reading settings from %@", _settingsPath);	
-	if ([[NSFileManager defaultManager] isReadableFileAtPath: _settingsPath] == FALSE)
-	{
-		NSLog(@"Read from %@ failed!  Using defaults.", _settingsPath);
-	}
-	else
+	if ([[NSFileManager defaultManager] isReadableFileAtPath: _settingsPath])
 	{
 		NSDictionary* settingsDict = [NSDictionary dictionaryWithContentsOfFile: _settingsPath];
 		NSEnumerator* enumerator = [settingsDict keyEnumerator];
@@ -158,7 +151,19 @@
 		{					
 			if ([currKey isEqualToString: @"MFStartupDir"])
 			{
-				[[_startupDirCell textField] setText: [settingsDict valueForKey: currKey]];
+				[[_startupDirCell textField] setText: [[settingsDict valueForKey: currKey] stringByAbbreviatingWithTildeInPath]];
+			}
+			if ([currKey isEqualToString: @"MFShowHiddenFiles"])
+			{
+				[_showHiddenFilesSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
+			}
+			if ([currKey isEqualToString: @"MFLaunchApplications"])
+			{
+				[_launchApplicationsSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
+			}
+			if ([currKey isEqualToString: @"MFProtectSystemFiles"])
+			{
+				[_protectSystemFilesSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
 			}
 		}
 	}
@@ -166,24 +171,27 @@
 
 - (void) writeSettings
 {
-	NSLog(@"Writing settings to %@", _settingsPath);
-	
 	//Verify settings
 	//TODO: Error message on invalid setting
 	BOOL startDirIsDirectory;	
 	NSString* startDir = [[_startupDirCell textField] text];
+	startDir = [startDir stringByStandardizingPath];
 	if ([[NSFileManager defaultManager] fileExistsAtPath: startDir isDirectory: &startDirIsDirectory] == FALSE || 
 		startDirIsDirectory == FALSE)
 	{
-		NSLog(@"Path for start dir \"%@\" is invalid. Using \"/Applications\"", startDir);
 		startDir = [[NSString alloc] initWithString: @"/Applications"]; 
 	}
-	else
-		NSLog(@"Start dir: \"%@\"", startDir);
+	startDir = [startDir stringByAbbreviatingWithTildeInPath];
+	NSString* showHiddenFilesValue = [_showHiddenFilesSwitch value] == 0 ? @"0" : @"1";
+	NSString* launchApplicationsValue = [_launchApplicationsSwitch value] == 0 ? @"0" : @"1";
+	NSString* protectSystemFilesValue = [_protectSystemFilesSwitch value] == 0 ? @"0" : @"1";
 	
 	//Build settings dictionary
 	NSDictionary* settingsDict = [[NSDictionary alloc] initWithObjectsAndKeys:
 		startDir, @"MFStartupDir",
+		showHiddenFilesValue, @"MFShowHiddenFiles",
+		launchApplicationsValue, @"MFLaunchApplications",
+		protectSystemFilesValue, @"MFProtectSystemFiles",
 		nil];
 	
 	//Seralize settings dictionary
@@ -194,12 +202,11 @@
 	
 	//Write settings plist file
 	[rawPList writeToFile: _settingsPath atomically: YES];
-	NSLog(@"Settings written to %@", _settingsPath);
 }
 
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
 {
-	return 4;
+	return 2;//4;
 }
 
 - (int) preferencesTable: (UIPreferencesTable*)table 
@@ -209,8 +216,8 @@
 	{ 
         case 0: return 0;
 		case 1: return 4;
-		case 2: return 0;
-		case 3: return 4;
+		//case 2: return 0;
+		//case 3: return 4;
 		default: return 0;
     }
 }
@@ -222,8 +229,8 @@
 	{
 		case 0: return _filesystemGroup;
 		case 1: return _filesystemGroup;
-		case 2: return _styleGroup;
-		case 3: return _styleGroup;
+		//case 2: return _styleGroup;
+		//case 3: return _styleGroup;
 		default: return nil;
 	}
 } 
@@ -235,8 +242,8 @@
 	{
 		case 0: return TRUE;
 		case 1: return FALSE;
-		case 2: return TRUE;
-		case 3: return FALSE;
+		//case 2: return TRUE;
+		//case 3: return FALSE;
 		default: return TRUE;
 	}
 }
@@ -256,15 +263,15 @@
 				case 2: return _launchApplicationsCell;
 				case 3: return _protectSystemFilesCell;
 			}
-		case 2: return _styleGroup;
-		case 3:
-			switch (row)
-			{
-				case 0:	return _barStyleCell;
-				case 1:	return _buttonStyleCell;
-				case 2:	return _browserBackgroundCell;
-				case 3:	return _iconSizeCell;
-			}
+		//case 2: return _styleGroup;
+		//case 3:
+		//	switch (row)
+		//	{
+		//		case 0:	return _barStyleCell;
+		//		case 1:	return _buttonStyleCell;
+		//		case 2:	return _browserBackgroundCell;
+		//		case 3:	return _iconSizeCell;
+		//	}
 		default: return nil;
 	}
 }
@@ -274,12 +281,12 @@
 	inGroup: (int)group 
 	withProposedHeight: (float)proposed 
 {
-	float groupLabelBuffer = 16.0f;
+	float groupLabelBuffer = 24.0f;
 	
 	switch (group)
 	{
 		case 0: return proposed + groupLabelBuffer;
-		case 2:	return proposed + groupLabelBuffer;
+		//case 2:	return proposed + groupLabelBuffer;
 		default: return proposed;
 	}
 }

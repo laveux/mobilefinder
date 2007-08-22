@@ -220,8 +220,11 @@
 	
 	//Update settings
 	//TODO: This should be done here?
+	//TODO: See UIControl addTarget:action:forEvents:
 	[_settings writeSettings];
 	[_browser setShowHiddenFiles: [_settings showHiddenFiles]];
+	[_browser setLaunchApplications: [_settings launchApplications]];
+	[_browser setProtectSystemFiles: [_settings protectSystemFiles]];
 }
 
 - (void) makeSettingsActive
@@ -427,7 +430,7 @@
 
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
 {
-	[_navBar setPrompt: path];
+	[_navBar setPrompt: [path stringByAbbreviatingWithTildeInPath]];
 }
 
 - (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
