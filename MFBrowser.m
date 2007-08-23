@@ -359,8 +359,8 @@
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
 {
 	//Ensure absolute paths
-	srcPath = [[NSString alloc] initWithString: [self absolutePath: srcPath]];
-	dstPath = [[NSString alloc] initWithString: [self absolutePath: dstPath]];
+	NSString* absoluteSrcPath = [self absolutePath: srcPath];
+	NSString* absoluteDstPath = [self absolutePath: dstPath];
 	
 	//TODO: Test this well
 	BOOL operationSuccess;
@@ -370,11 +370,13 @@
 		//[[NSFileManager defaultManager] movePath: @"/Test" toPath: @"/System/Test" handler: nil];
 		
 		//HACK: Above statements crash program.  Use system call to move file
-		NSString* moveCommand = [[[[[NSString string]
-			stringByAppendingString: @"/bin/mv "] 
-			stringByAppendingString: srcPath]
-			stringByAppendingString: @" "]
-			stringByAppendingString: dstPath];
+		NSString* moveCommand = [[[[[[NSString string]
+			stringByAppendingString: @"/bin/mv \'"] 
+			stringByAppendingString: absoluteSrcPath]
+			stringByAppendingString: @"\' \'"]
+			stringByAppendingString: absoluteDstPath]
+			stringByAppendingString: @"\'"];
+		NSLog(@"%@", moveCommand);
 		system([moveCommand UTF8String]);
 		usleep(10);	
 	}
@@ -383,11 +385,13 @@
 		//operationSuccess = [_fileManager copyPath: srcPath toPath: dstPath handler: nil];
 		
 		//HACK: Above statement crashes program.  Use system call to copy file
-		NSString* copyCommand = [[[[[NSString string]
-			stringByAppendingString: @"/bin/cp -R "] 
-			stringByAppendingString: srcPath]
-			stringByAppendingString: @" "]
-			stringByAppendingString: dstPath];
+		NSString* copyCommand = [[[[[[NSString string]
+			stringByAppendingString: @"/bin/cp -R \'"] 
+			stringByAppendingString: absoluteSrcPath]
+			stringByAppendingString: @"\' \'"]
+			stringByAppendingString: absoluteDstPath]
+			stringByAppendingString: @"\'"];
+		NSLog(@"%@", copyCommand);
 		system([copyCommand UTF8String]);
 		usleep(10);	
 	}
