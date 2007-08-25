@@ -76,6 +76,7 @@
 	_showHiddenFiles = FALSE;
 	_launchApplications = TRUE;
 	_protectSystemFiles = TRUE;
+	_fileTypeAssociations = nil;
 	
 	//List root
 	_fileManager = [NSFileManager defaultManager];
@@ -121,6 +122,11 @@
 	return _protectSystemFiles;
 }
 
+- (NSArray*) fileTypeAssociations
+{
+	return _fileTypeAssociations;
+}
+
 - (void) setDelegate: (id)delegate;
 {
 	_delegate = delegate;
@@ -143,6 +149,12 @@
 {
 	_protectSystemFiles = protectSystemFiles;
 	[self openPath: [self currentDirectory]];
+}
+
+- (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations
+{
+	//TODO: Ownership stuff.  Leaks!
+	_fileTypeAssociations = [[NSArray alloc] initWithArray: fileTypeAssociations];
 }
 
 - (void) refreshFileView
@@ -175,6 +187,7 @@
 			//Add filename and cell to collections
 			//Cells and filenames are stored seperately to allow the displayed name to differ from the actual name
 			//(eg. Calculator.app -> Calculator)
+			//TODO: This
 			[_fileviewCells addObject: cell];
 			[_fileviewCellFilenames addObject: filename];
 		}
@@ -260,25 +273,33 @@
 			//WARNING: This executes GUI apps, but they never return!  You have to reboot!
 			//Should only execute executables that eventually end
 			//TODO: Allow cancelation of execution
+			//TODO: Make execution of these a setting
 			system([absolutePath fileSystemRepresentation]);
-		}	
-		else if (
-			[extension isEqualToString: @"txt"] ||
-			[extension isEqualToString: @"plist"])
-		{
-			//TODO: Dynamic prefs for strings			
-			[MSAppLauncher launchApplication: @"com.google.code.MobileTextEdit" 
-				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
-				withLaunchingAppID: _applicationID
-				withApplication: _application];				
 		}
-		else if ([extension isEqualToString: @"png"])
+		
+		//Check extension against file type associations
+		NSEnumerator* enumerator = [_fileTypeAssociations objectEnumerator];
+		NSString* fileTypeAssociation;
+		while (fileTypeAssociation = [enumerator nextObject])
 		{
-			//TODO: Dynamic prefs for strings			
-			[MSAppLauncher launchApplication: @"com.google.code.MobilePreview" 
-				withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
-				withLaunchingAppID: _applicationID
-				withApplication: _application];
+			//Separate the extension and application ID parts of the file association
+			NSArray* associationParts = [fileTypeAssociation componentsSeparatedByString: @":"];
+			if (associationParts != nil && [associationParts count] == 2)
+			{
+				NSString* associationExtension = [associationParts objectAtIndex: 0];
+				NSString* associationAppID = [associationParts objectAtIndex: 1];
+				
+				//Check for matches
+				//TODO: Should be case sensitive?
+				if ([extension isEqualToString: associationExtension])
+				{
+					//Launch application with file as argument
+					[MSAppLauncher launchApplication: associationAppID 
+						withArguments: [[NSArray alloc] initWithObjects: absolutePath, nil]
+						withLaunchingAppID: _applicationID
+						withApplication: _application];	
+				}
+			}
 		}
 	}
 }

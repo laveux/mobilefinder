@@ -212,6 +212,9 @@
 
 - (void) makeBrowserActive
 {
+	if ([_mainView containsView: _browser])
+		return;
+		
 	[_settings removeFromSuperview];
 	[_mainView addSubview: _browser];
 	[_mainView addSubview: _fileOpBar];
@@ -225,10 +228,14 @@
 	[_browser setShowHiddenFiles: [_settings showHiddenFiles]];
 	[_browser setLaunchApplications: [_settings launchApplications]];
 	[_browser setProtectSystemFiles: [_settings protectSystemFiles]];
+	[_browser setFileTypeAssociations: [_settings fileTypeAssociations]];
 }
 
 - (void) makeSettingsActive
 {
+	if ([_mainView containsView: _settings])
+		return;
+		
 	[_settings readSettings];
 	[_browser removeFromSuperview];
 	[_fileOpBar removeFromSuperview];

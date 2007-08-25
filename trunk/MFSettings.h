@@ -46,11 +46,15 @@
 	UIPreferencesTableCell* _launchApplicationsCell;
 	UIPreferencesTableCell* _protectSystemFilesCell;
 	
-	//UIPreferencesTableCell* _styleGroup;
-	//UIPreferencesTableCell* _barStyleCell;
-	//UIPreferencesTableCell* _buttonStyleCell;
-	//UIPreferencesTableCell* _browserBackgroundCell;
-	//UIPreferencesTableCell* _iconSizeCell;
+	UIPreferencesTableCell* _styleGroup;
+	UIPreferencesTableCell* _barStyleCell;
+	UIPreferencesTableCell* _buttonStyleCell;
+	UIPreferencesTableCell* _browserBackgroundCell;
+	UIPreferencesTableCell* _iconSizeCell;
+	
+	UIPreferencesTableCell* _associationsGroup;
+	UIPreferencesTableCell* _associationsDescription;
+	NSMutableArray* _associationsCells;
 	
 	UISwitchControl* _showHiddenFilesSwitch;
 	UISwitchControl* _launchApplicationsSwitch;
@@ -65,6 +69,7 @@
 - (BOOL) showHiddenFiles;
 - (BOOL) launchApplications;
 - (BOOL) protectSystemFiles;
+- (NSArray*) fileTypeAssociations;
 - (void) setDelegate: (id)delegate;
 - (void) readSettings;
 - (void) writeSettings;

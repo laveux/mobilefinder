@@ -39,20 +39,26 @@
 
 @interface MFBrowser : UIView
 {
+	//UI elements
 	UITable* _fileviewTable;
 	UITableColumn* _fileviewTableCol;
-	NSFileManager* _fileManager;
-    NSMutableArray* _fileviewCells;
+	NSMutableArray* _fileviewCells;
 	NSMutableArray* _fileviewCellFilenames;
-	id _delegate;
+	NSFileManager* _fileManager;
+    NSString* _selectedPath;
+	
+	//Communication
 	UIApplication* _application;
 	NSString* _applicationID;
-	NSString* _selectedPath;
+	id _delegate;
+	
+	//Settings
 	BOOL _showHiddenFiles;
 	BOOL _launchApplications;
 	BOOL _protectSystemFiles;
+	NSArray* _fileTypeAssociations;
 	
-	//Used for rename feature
+	//Rename feature
 	CGRect _fileviewTableRect;
 	UIKeyboard* _keyboard;
 	UITextView* _filenameTextField;
@@ -65,10 +71,12 @@
 - (BOOL) launchApplications;
 - (BOOL) showHiddenFiles;
 - (BOOL) protectSystemFiles;
+- (NSArray*) fileTypeAssociations;
 - (void) setDelegate: (id)delegate;
 - (void) setLaunchApplications: (BOOL)launchApplications;
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
+- (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) refreshFileView;
 - (void) selectPath: (NSString*)path;
 - (void) openPath: (NSString*)path;
