@@ -45,8 +45,7 @@
 	NSMutableArray* _fileviewCells;
 	NSMutableArray* _fileviewCellFilenames;
 	NSFileManager* _fileManager;
-    NSString* _selectedPath;
-	
+    
 	//Communication
 	UIApplication* _application;
 	NSString* _applicationID;
@@ -63,11 +62,12 @@
 	UIKeyboard* _keyboard;
 	UITextView* _filenameTextField;
 	NSString* _renamingFilename;
+	NSString* _lastSelectedPath;
 }
 - (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect;
 - (NSString*) absolutePath: (NSString*) path;
 - (NSString*) currentDirectory;
-- (NSString*) currentSelectedPath;
+- (NSString*) currentHighlightedPath;
 - (BOOL) launchApplications;
 - (BOOL) showHiddenFiles;
 - (BOOL) protectSystemFiles;
@@ -78,7 +78,7 @@
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) refreshFileView;
-- (void) selectPath: (NSString*)path;
+- (void) highlightPath: (NSString*)path;
 - (void) openPath: (NSString*)path;
 - (UIImage*) determineFileIcon: (NSString*)absolutePath;
 - (void) changeDirectoryToRoot;
@@ -97,6 +97,6 @@
 //Protocol for browser state change notifications
 @interface NSObject (MFBrowserStateChange)
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
-- (void) browserCurrentSelectedPathChanged: (MFBrowser*)browser toPath: (NSString*)path;
+- (void) browserCurrentHighlightedPathChanged: (MFBrowser*)browser toPath: (NSString*)path;
 @end
 

@@ -280,7 +280,7 @@
 
 - (void) copyButtonPressed
 {
-	if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
+	if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentHighlightedPath] != nil)
 	{ 
 		[self resetFileOpButtons];
 		[_copyButton setNavBarButtonStyle: 3];
@@ -290,7 +290,7 @@
 		[_deleteButton setEnabled: FALSE];
 		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
+		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentHighlightedPath]];
 	}
 	else if ([[_copyButton title] isEqualToString: @"Paste"])
 	{
@@ -302,7 +302,9 @@
 	}
 	else if ([[_copyButton title] isEqualToString: @"Delete"])
 	{
-		[_browser deletePath: [_browser currentSelectedPath]];
+		NSString* currentHighlightedPath = [_browser currentHighlightedPath];
+		if (currentHighlightedPath != nil)
+			[_browser deletePath: currentHighlightedPath];
 		[self resetFileOpButtons];
 	}
 	else if ([[_copyButton title] isEqualToString: @"File"])
@@ -318,7 +320,7 @@
 
 - (void) moveButtonPressed
 {
-	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
+	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentHighlightedPath] != nil)
 	{ 
 		[self resetFileOpButtons];
 		[_moveButton setNavBarButtonStyle: 3];
@@ -328,7 +330,7 @@
 		[_deleteButton setEnabled: FALSE];
 		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentSelectedPath]];
+		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentHighlightedPath]];
 	}
 	else if ([[_moveButton title] isEqualToString: @"Paste"])
 	{
@@ -351,7 +353,7 @@
 
 - (void) deleteButtonPressed
 {
-	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentSelectedPath] != nil)
+	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentHighlightedPath] != nil)
 	{
 		[self resetFileOpButtons];
 		[_deleteButton setNavBarButtonStyle: 3];
@@ -370,7 +372,7 @@
 
 - (void) renameButtonPressed
 {
-	if ([[_renameButton title] isEqualToString: @"Rename"] && [_browser currentSelectedPath] != nil)
+	if ([[_renameButton title] isEqualToString: @"Rename"] && [_browser currentHighlightedPath] != nil)
 	{
 		[self resetFileOpButtons];
 		[_moveButton setEnabled: FALSE];
@@ -409,7 +411,7 @@
 	else if ([[_newButton title] isEqualToString: @"Rename"])
 	{
 		[_newButton setTitle: @"Done"];
-		[_browser beginRenamePath: [_browser currentSelectedPath]];
+		[_browser beginRenamePath: [_browser currentHighlightedPath]];
 	}
 	else if ([[_newButton title] isEqualToString: @"Done"])
 	{
@@ -440,9 +442,9 @@
 	[_navBar setPrompt: [path stringByAbbreviatingWithTildeInPath]];
 }
 
-- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
+- (void) browserCurrentHighlightedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
 {
-	//[self resetFileOpButtons];
+	
 }
 
 - (void) applicationDidFinishLaunching: (id)unused
