@@ -78,6 +78,9 @@
 	_protectSystemFiles = TRUE;
 	_fileTypeAssociations = nil;
 	
+	//Initialize state variables
+	_lastSelectedPath = nil;
+	
 	//List root
 	_fileManager = [NSFileManager defaultManager];
 	[self changeDirectoryToApplications];
@@ -102,9 +105,13 @@
 	return [[_fileManager currentDirectoryPath] stringByStandardizingPath];
 }
 
-- (NSString*) currentSelectedPath
+- (NSString*) currentHighlightedPath
 {
-	return _selectedPath;
+	int selectedRow = [_fileviewTable selectedRow];
+	if (selectedRow > 0 && selectedRow < [_fileviewCellFilenames count])
+		return [self absolutePath: [_fileviewCellFilenames objectAtIndex: selectedRow]];
+	else
+		return nil;
 }
 
 - (BOOL) launchApplications
@@ -159,12 +166,15 @@
 
 - (void) refreshFileView
 {
-	//Make sure we have a new, empty fileviewCells
-	//TODO: Releases cells?
-	[_fileviewCells release];
+	//Make sure we have new, empty fileviewCells and fileviewCellFilenames
+	//TODO: clear out right
+	//[_fileviewCells makeObjectsPerformSelector: @selector(release)];
+	[_fileviewCells release];				
 	_fileviewCells = [[NSMutableArray alloc] init];
+	//[_fileviewCellFilenames makeObjectsPerformSelector: @selector(release)];
 	[_fileviewCellFilenames release];
 	_fileviewCellFilenames = [[NSMutableArray alloc] init];
+	[_fileviewTable clearAllData];
 	
 	//Get the directory listing for the specified path
 	NSDirectoryEnumerator* dirEnumerator = [_fileManager enumeratorAtPath: [self currentDirectory]];
@@ -197,13 +207,37 @@
 	[_fileviewTable reloadData];
 }
 
-- (void) selectPath: (NSString*)path
+- (void) highlightPath: (NSString*)path
 {
-	_selectedPath = [[NSString alloc] initWithString: path];
-	if ([_delegate respondsToSelector: @selector(browserCurrentSelectedPathChanged:toPath:)])	
-		[_delegate browserCurrentSelectedPathChanged: self toPath: _selectedPath];
+	//Make sure that the path exsists
+	if ([_fileManager fileExistsAtPath: path] == FALSE)
+		return;
+		
+	//Determine the path's nature
+	NSString* absolutePath = [self absolutePath: path];
+	NSString* parentDirectory = [absolutePath stringByDeletingLastPathComponent];
+	NSString* relativePath = [absolutePath lastPathComponent];
 	
-	//TODO: Select the table cell in the UI or make this function private
+	//If the parent directory of the path is not currently displayed, switch to that directory
+	if ([[[_fileManager currentDirectoryPath] stringByStandardizingPath] isEqualToString: 
+		[parentDirectory stringByStandardizingPath]] == FALSE)
+	{
+		[self openPath: parentDirectory];
+	}
+	
+	//Find the path in the listing and highlight it
+	NSEnumerator* enumerator = [_fileviewCellFilenames objectEnumerator];
+	NSString* currPath;
+	while (currPath = [enumerator nextObject])
+	{
+		if ([currPath isEqualToString: relativePath])
+		{
+			int selecteeCellRow = [_fileviewCellFilenames indexOfObject: currPath];
+			[_fileviewTable highlightRow: selecteeCellRow];
+			[_fileviewTable scrollRowToVisible: selecteeCellRow];
+			[_fileviewTable selectHighlightedRow];
+		}
+	}
 }
 
 - (void) openPath: (NSString*)path
@@ -225,9 +259,22 @@
 	
 	//Change to the specified path, if it is a directory
 	if ([_fileManager changeCurrentDirectoryPath: path])
-	{
+	{		
 		//Refresh the fileview table
-		[self refreshFileView];		
+		[self refreshFileView];	
+		//If moving to a path that is a parent of the last path, select the child in the current directory
+		//that is part of the last path
+		//TODO: this doesn't seem to work that well.  lesser implementation is in changeDirectoryToLast
+		/*
+		if ([lastPath isEqualToString: [_fileManager currentDirectoryPath]] == FALSE &&
+			[lastPath hasPrefix: [_fileManager currentDirectoryPath]])
+		{
+			NSArray* currentPathComponents = [[_fileManager currentDirectoryPath] pathComponents];
+			NSArray* lastPathComponents = [lastPath pathComponents];			
+			[self highlightPath: [lastPathComponents objectAtIndex: [currentPathComponents count]]];
+			//[lastPathComponents objectAtIndex: [currentPathComponents count]];
+		}
+		*/
 	
 		//Let delegate know of directory change
 		if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])
@@ -364,7 +411,11 @@
 	else if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: @"/Applications"])
 		[self changeDirectoryToApplications];
 	else
+	{
+		NSString* currPath = [self currentDirectory];
 		[self openPath: @"../"];
+		[self highlightPath: currPath];
+	}
 }
 
 - (void) changeDirectoryToHome
@@ -379,6 +430,10 @@
 
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
 {
+	//Sanity check args
+	if (srcPath == nil || dstPath == nil)
+		return;
+	
 	//Ensure absolute paths
 	NSString* absoluteSrcPath = [self absolutePath: srcPath];
 	NSString* absoluteDstPath = [self absolutePath: dstPath];
@@ -510,15 +565,32 @@
 
 - (void) tableRowSelected: (NSNotification*) notification 
 {
+	//Get selected row and perform sanity check
+	int selectedRow = [_fileviewTable selectedRow];
+	if (selectedRow < 0 || selectedRow > [_fileviewCellFilenames count])
+		return;
+		
 	//Get selected cell and filename
-	UIImageAndTextTableCell* selectedCell = [_fileviewCells objectAtIndex: [_fileviewTable selectedRow]];
-	NSString* selectedCellFilename = [_fileviewCellFilenames objectAtIndex: [_fileviewTable selectedRow]];
-	NSString* selectedPath = [[self currentDirectory] stringByAppendingPathComponent: selectedCellFilename];
+	NSString* selectedCellFilename = [_fileviewCellFilenames objectAtIndex: selectedRow];
+	NSString* selectedAbsolutePath = [self absolutePath: selectedCellFilename];
 	
-	if (_selectedPath != nil && [selectedPath isEqualToString: _selectedPath])
-		[self openPath: selectedPath];
+	//Inform delegate in change in highlighted path
+	if ([_delegate respondsToSelector: @selector(browserCurrentHighlightedPathChanged:toPath:)])	
+		[_delegate browserCurrentHighlightedPathChanged: self toPath: selectedAbsolutePath];
+	
+	//If the cell is being re-highlighted, open it
+	NSLog(@"_lastSelectedPath: %@", _lastSelectedPath);
+	NSLog(@"selectedAbsolutePath: %@", selectedAbsolutePath);
+	if (_lastSelectedPath != nil && [selectedAbsolutePath isEqualToString: _lastSelectedPath])
+	{
+		NSLog(@"Opening...");
+		[self openPath: selectedAbsolutePath];
+	}
 	else
-		[self selectPath: selectedPath];
+	{
+		[_lastSelectedPath release];
+		_lastSelectedPath = [[NSString alloc] initWithString: selectedAbsolutePath];
+	}
 }
 
 @end

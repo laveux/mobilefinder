@@ -61,6 +61,6 @@
 - (void) newButtonPressed;
 - (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button;
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
-- (void) browserCurrentSelectedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
+- (void) browserCurrentHighlightedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
 @end
 
