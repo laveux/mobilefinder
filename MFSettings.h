@@ -44,30 +44,26 @@
 	UIPreferencesTextTableCell* _startupDirCell;
 	UIPreferencesTableCell* _showHiddenFilesCell;
 	UIPreferencesTableCell* _launchApplicationsCell;
+	UIPreferencesTableCell* _launchExecutablesCell;
 	UIPreferencesTableCell* _protectSystemFilesCell;
 	
-	UIPreferencesTableCell* _styleGroup;
-	UIPreferencesTableCell* _barStyleCell;
-	UIPreferencesTableCell* _buttonStyleCell;
-	UIPreferencesTableCell* _browserBackgroundCell;
-	UIPreferencesTableCell* _iconSizeCell;
-	
 	UIPreferencesTableCell* _associationsGroup;
-	UIPreferencesTableCell* _associationsDescription;
 	NSMutableArray* _associationsCells;
 	
 	UISwitchControl* _showHiddenFilesSwitch;
 	UISwitchControl* _launchApplicationsSwitch;
+	UISwitchControl* _launchExecutablesSwitch;
 	UISwitchControl* _protectSystemFilesSwitch;
 	
 	NSString* _settingsPath;
 	id _delegate;
 }
-- (id) initWithFrame: (struct CGRect)rect
-	withSettingsPath: (NSString*)settingsPath;
+- (id) initWithFrame: (struct CGRect)rect withSettingsPath: (NSString*)settingsPath;
+- (void) dealloc;
 - (NSString*) startupDirPath;
 - (BOOL) showHiddenFiles;
 - (BOOL) launchApplications;
+- (BOOL) launchExecutables;
 - (BOOL) protectSystemFiles;
 - (NSArray*) fileTypeAssociations;
 - (void) setDelegate: (id)delegate;

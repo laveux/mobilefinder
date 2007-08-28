@@ -29,8 +29,12 @@
 
 int main(int argc, char** argv)
 {
-	//TODO: This program leaks memory everywhere.  Fix this with retain, release, and autorelease!
-	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-	return UIApplicationMain(argc, argv, [MFApp class]);
+	//Allocate autorelease pool and run application
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];	
+	int appReturn = UIApplicationMain(argc, argv, [MFApp class]);	
+	
+	//Free all memory and return result of application's run
+	[pool release];
+	return appReturn;
 }
 

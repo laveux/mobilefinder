@@ -25,3 +25,7 @@ Compiling From Sources (Optional!)
 5. mkdir Finder.app
 6. Copy Finder and all PNG images into Finder.app
 7. Follow Install Instructions above
+
+Bug List:
+* Preference group titles change position when the scrolling table is pushed beyond the top or bottom
+* Keyboard to set preferences doesn't disapear

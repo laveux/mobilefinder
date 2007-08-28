@@ -46,7 +46,7 @@
 
 @implementation MFApp : UIApplication
 
-- (void) initApplication
+- (void) runApplication
 {   
 	//Set applicationID
 	_applicationID = @"com.googlecode.MobileFinder";
@@ -83,16 +83,7 @@
 	float deleteButtonWidth = 60.0f;
 	float renameButtonWidth = 60.0f;
 	float newButtonWidth = 60.0f;
-	
-	//Get LaunchInfo argument, if any
-	NSDictionary* launchInfo = [MSAppLauncher readLaunchInfoForAppID: _applicationID
-		withApplication: self
-		deletingLaunchPList: TRUE];
-	if (launchInfo != nil)
-	{
 		
-	}		
-	
 	//Setup the settings pane (and load settings)
 	NSString* settingsPath = [[[[self userLibraryDirectory] 
 		stringByAppendingPathComponent: @"Preferences"]
@@ -106,11 +97,6 @@
 	[_settings setDelegate: self];
 	
 	//Setup navigation bar
-	/*
-		Navigation Bar Styles
-		0 - Dark Blue
-		1 - Black
-	*/
 	_navBar = [[UINavigationBar alloc] initWithFrame: CGRectMake(0.0f, 0.0f, navBarWidth, navBarHeight)];
 	[_navBar showButtonsWithLeftTitle: @"Back" rightTitle: @"Home" leftBack: TRUE];
     [_navBar setBarStyle: 3];
@@ -118,13 +104,6 @@
 	[_mainView addSubview: _navBar];
 	
 	//Setup navigation bar buttons
-	/*
-		Button Styles
-		0 - Dark Blue Rectangle
-		1 - Dark Red Rectangle
-		2 - Dark Blue Left Arrow
-		3 - Light Blue Rectangle
-	*/
 	_finderButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
 		navBarWidth / 2.0f - finderButtonWidth - navBarButtonBuffer / 2.0f,
 		navBarHeight - navBarButtonHeight - navBarSouthBuffer, 
@@ -182,7 +161,6 @@
 		fileOpBarNorthBuffer, 
 		renameButtonWidth, fileOpBarButtonHeight)];
 	[_renameButton setAutosizesToFit: FALSE];
-	//[_renameButton setTitleFont: [UIButtonBarButton _defaultLabelFont]];
 	[_renameButton addTarget: self action: @selector(renameButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
 	[_fileOpBar addSubview: _renameButton];
@@ -204,17 +182,65 @@
 			navBarHeight, 
 			screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
 	[_browser setDelegate: self];
-	[_browser openPath: [_settings startupDirPath]];
-			
+	
+	//Get launch information
+	//If we were launched using another AppLauncher-aware program, enter the mandatory app launch mode
+	NSDictionary* launchInfo = [MSAppLauncher readLaunchInfoForAppID: _applicationID
+		withApplication: self
+		deletingLaunchPList: TRUE];
+	if (launchInfo != nil)
+	{
+		NSEnumerator* enumerator = [launchInfo keyEnumerator];
+		NSString* currKey;
+		while (currKey = [enumerator nextObject]) 
+		{	
+			if ([currKey isEqualToString: @"MSLaunchingAppIdentifier"])
+			{
+				//TODO: Need visual comment on mode of operation?
+				NSString* mandatoryAppID = [launchInfo valueForKey: currKey];
+				[_browser setMandatoryLaunchApplication: mandatoryAppID];
+			}
+		}
+	}		
+	
 	//Make the browser active at start
 	[self makeBrowserActive];
+	
+	//Open the start directory
+	[_browser openPath: [_settings startupDirPath]];
+}
+
+- (void) dealloc
+{
+	[_window release];
+	[_mainView release];
+	[_browser release];
+	[_settings release];
+	[_navBar release];
+	[_finderButton release];
+	[_settingsButton release];
+	[_fileOpBar release];
+	[_moveButton release];
+	[_copyButton release];
+	[_deleteButton release];
+	[_renameButton release];
+	[_newButton release];
+	
+	[_pathSelectedForFileOp release];
+	
+	[super dealloc];
 }
 
 - (void) makeBrowserActive
 {
 	if ([_mainView containsView: _browser])
 		return;
-		
+	
+	//Enable navBar buttons
+	[_navBar setButton: 0 enabled: TRUE];
+	[_navBar setButton:	1 enabled: TRUE];
+	
+	//Switch views
 	[_settings removeFromSuperview];
 	[_mainView addSubview: _browser];
 	[_mainView addSubview: _fileOpBar];
@@ -222,11 +248,10 @@
 	[_settingsButton setNavBarButtonStyle: 0];
 	
 	//Update settings
-	//TODO: This should be done here?
-	//TODO: See UIControl addTarget:action:forEvents:
 	[_settings writeSettings];
 	[_browser setShowHiddenFiles: [_settings showHiddenFiles]];
 	[_browser setLaunchApplications: [_settings launchApplications]];
+	[_browser setLaunchExecutables: [_settings launchExecutables]];
 	[_browser setProtectSystemFiles: [_settings protectSystemFiles]];
 	[_browser setFileTypeAssociations: [_settings fileTypeAssociations]];
 }
@@ -235,7 +260,12 @@
 {
 	if ([_mainView containsView: _settings])
 		return;
-		
+	
+	//Disable navBar buttons
+	[_navBar setButton: 0 enabled: FALSE];
+	[_navBar setButton:	1 enabled: FALSE];
+	
+	//Switch views
 	[_settings readSettings];
 	[_browser removeFromSuperview];
 	[_fileOpBar removeFromSuperview];
@@ -280,19 +310,21 @@
 
 - (void) copyButtonPressed
 {
-	if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentHighlightedPath] != nil)
+	if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
 	{ 
 		[self resetFileOpButtons];
 		[_copyButton setNavBarButtonStyle: 3];
 		[_copyButton setTitle: @"Cancel"];
 		[_moveButton setNavBarButtonStyle: 3];
-		[_moveButton setTitle: @"Paste"];
+		[_moveButton setTitle: @"Copy"];
 		[_deleteButton setEnabled: FALSE];
 		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentHighlightedPath]];
+		
+		[_pathSelectedForFileOp autorelease];
+		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
 	}
-	else if ([[_copyButton title] isEqualToString: @"Paste"])
+	else if ([[_copyButton title] isEqualToString: @"Move"])
 	{
 		[_browser 
 			sendSrcPath: _pathSelectedForFileOp 
@@ -302,9 +334,9 @@
 	}
 	else if ([[_copyButton title] isEqualToString: @"Delete"])
 	{
-		NSString* currentHighlightedPath = [_browser currentHighlightedPath];
-		if (currentHighlightedPath != nil)
-			[_browser deletePath: currentHighlightedPath];
+		NSString* currentSelectedPath = [_browser currentSelectedPath];
+		if (currentSelectedPath != nil)
+			[_browser deletePath: currentSelectedPath];
 		[self resetFileOpButtons];
 	}
 	else if ([[_copyButton title] isEqualToString: @"File"])
@@ -320,19 +352,21 @@
 
 - (void) moveButtonPressed
 {
-	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentHighlightedPath] != nil)
+	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
 	{ 
 		[self resetFileOpButtons];
 		[_moveButton setNavBarButtonStyle: 3];
 		[_moveButton setTitle: @"Cancel"];
 		[_copyButton setNavBarButtonStyle: 3];
-		[_copyButton setTitle: @"Paste"];
+		[_copyButton setTitle: @"Move"];
 		[_deleteButton setEnabled: FALSE];
 		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-		_pathSelectedForFileOp = [[NSString alloc] initWithString: [_browser currentHighlightedPath]];
+		
+		[_pathSelectedForFileOp autorelease];
+		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
 	}
-	else if ([[_moveButton title] isEqualToString: @"Paste"])
+	else if ([[_moveButton title] isEqualToString: @"Copy"])
 	{
 		[_browser 
 			sendSrcPath: _pathSelectedForFileOp 
@@ -353,7 +387,7 @@
 
 - (void) deleteButtonPressed
 {
-	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentHighlightedPath] != nil)
+	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentSelectedPath] != nil)
 	{
 		[self resetFileOpButtons];
 		[_deleteButton setNavBarButtonStyle: 3];
@@ -372,7 +406,7 @@
 
 - (void) renameButtonPressed
 {
-	if ([[_renameButton title] isEqualToString: @"Rename"] && [_browser currentHighlightedPath] != nil)
+	if ([[_renameButton title] isEqualToString: @"Rename"] && [_browser currentSelectedPath] != nil)
 	{
 		[self resetFileOpButtons];
 		[_moveButton setEnabled: FALSE];
@@ -411,7 +445,7 @@
 	else if ([[_newButton title] isEqualToString: @"Rename"])
 	{
 		[_newButton setTitle: @"Done"];
-		[_browser beginRenamePath: [_browser currentHighlightedPath]];
+		[_browser beginRenamePath: [_browser currentSelectedPath]];
 	}
 	else if ([[_newButton title] isEqualToString: @"Done"])
 	{
@@ -449,8 +483,8 @@
 
 - (void) applicationDidFinishLaunching: (id)unused
 {
-	//Init Application
-	[self initApplication];    
+	//Run Application
+	[self runApplication];    
 }
 
 @end //MFApp

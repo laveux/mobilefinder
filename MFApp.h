@@ -50,7 +50,8 @@
 	
 	NSString* _pathSelectedForFileOp;
 }
-- (void) initApplication;
+- (void) runApplication;
+- (void) dealloc;
 - (void) makeBrowserActive;
 - (void) makeSettingsActive;
 - (void) resetFileOpButtons;
