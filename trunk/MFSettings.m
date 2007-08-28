@@ -55,13 +55,7 @@
 	[_prefsTable setDataSource: self];
     [_prefsTable setDelegate: self];
 	
-	//Create colors for controls
-	//CGColorSpaceRef rgbSpace = CGColorSpaceCreateDeviceRGB();
-    //float whiteComponents[4] = {1, 1, 1, 1};
-    //float transparentComponents[4] = {0, 0, 0, 0};
-    //float grayComponents[4] = {0.85, 0.85, 0.85, 1};
-    //float blueComponents[4] = {0.208, 0.482, 0.859, 1};
-
+	//Create control frame rects
 	CGRect switchRect = CGRectMake(200.0f, 9.0f, 320.0f - 200.0f, 32.0f);//[_prefsTable rowHeight]);
 	
 	//Setup filesystem group
@@ -78,31 +72,19 @@
 	[_launchApplicationsCell setTitle: @"Application Launch"];
 	_launchApplicationsSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
 	[_launchApplicationsCell addSubview: _launchApplicationsSwitch];
+	_launchExecutablesCell = [[UIPreferencesTableCell alloc] init];
+	[_launchExecutablesCell setTitle: @"Executable Launch"];
+	_launchExecutablesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_launchExecutablesCell addSubview: _launchExecutablesSwitch];
 	_protectSystemFilesCell = [[UIPreferencesTableCell alloc] init];
 	[_protectSystemFilesCell setTitle: @"Protect System Files"];
 	_protectSystemFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
 	[_protectSystemFilesCell addSubview: _protectSystemFilesSwitch];
 	
-	//Setup styles group
-	_styleGroup = [[UIPreferencesTableCell alloc] init];
-	[_styleGroup setTitle: @"Visuals"];	
-	[_styleGroup setIcon: [UIImage applicationImageNamed: @"Finder_32x32.png"]];	
-	_barStyleCell = [[UIPreferencesTableCell alloc] init];
-	[_barStyleCell setTitle: @"Bar Style"];
-	_buttonStyleCell = [[UIPreferencesTableCell alloc] init];
-	[_buttonStyleCell setTitle: @"Button Style"];
-	_browserBackgroundCell = [[UIPreferencesTableCell alloc] init];
-	[_browserBackgroundCell setTitle: @"Background"];
-	_iconSizeCell = [[UIPreferencesTableCell alloc] init];
-	[_iconSizeCell setTitle: @"Icon Size"];
-	
 	//Setup file associations group
 	_associationsGroup = [[UIPreferencesTableCell alloc] init];
 	[_associationsGroup setTitle: @"File Associations"];
 	[_associationsGroup setIcon: [UIImage applicationImageNamed: @"File_32x32.png"]];
-	_associationsDescription = [[UIPreferencesTableCell alloc] init];
-	[_associationsDescription setTitle: @"Associates a file type with an application\nEg: \"txt:com.google.code.MobileTextEdit\""];
-	[_associationsDescription sizeToFit];
 		
 	//Read in settings from settings plist
 	_settingsPath = [[NSString alloc] initWithString: settingsPath];
@@ -112,6 +94,29 @@
 	[self addSubview: _prefsTable];
 		
 	return self;
+}
+
+- (void) dealloc
+{	
+	[_filesystemGroup release];
+	[_startupDirCell release];
+	[_showHiddenFilesCell release];
+	[_launchApplicationsCell release];
+	[_protectSystemFilesCell release];	
+	
+	[_associationsGroup release];
+	[_associationsCells release];
+	
+	[_showHiddenFilesSwitch release];
+	[_launchApplicationsSwitch release];
+	[_launchExecutablesSwitch release];
+	[_protectSystemFilesSwitch release];
+	
+	[_settingsPath release];
+
+	[_prefsTable release];
+	
+	[super dealloc];
 }
 
 - (NSString*) startupDirPath
@@ -129,6 +134,11 @@
 	return [_launchApplicationsSwitch value] != 0;
 }
 
+- (BOOL) launchExecutables
+{
+	return [_launchExecutablesSwitch value] != 0;
+}
+
 - (BOOL) protectSystemFiles
 {
 	return [_protectSystemFilesSwitch value] != 0;
@@ -136,14 +146,17 @@
 
 - (NSArray*) fileTypeAssociations
 {
+	//Extract file type associations from the preferences cells, checking their validity
 	NSMutableArray* fileTypeAssociations = [[NSMutableArray alloc] init];
 	NSEnumerator *enumerator = [_associationsCells objectEnumerator];
 	UIPreferencesTextTableCell* cell;
 	while (cell = [enumerator nextObject])
 	{
 		NSString* fileTypeAssociation = [[cell textField] text];
-		//TODO: Check filetype association for validity
-		if (fileTypeAssociation != nil && [fileTypeAssociation isEqualToString: @""] == FALSE)
+		
+		//Ensure that there is one and only one colon in the name.  Thats good enough for me!
+		NSArray* fileTypeAssociationComponents = [fileTypeAssociation componentsSeparatedByString: @":"];
+		if ([fileTypeAssociationComponents count] == 2)
 		{
 			[fileTypeAssociations addObject: [[NSString alloc] initWithString: fileTypeAssociation]];
 		}
@@ -155,7 +168,8 @@
 
 - (void) setDelegate: (id)delegate
 {
-	_delegate = delegate;
+	[_delegate autorelease];
+	_delegate = [delegate retain];
 }
 
 - (void) readSettings
@@ -164,18 +178,20 @@
 	[[_startupDirCell textField] setText: @"/Applications"];
 	[_showHiddenFilesSwitch setValue: 0];
 	[_launchApplicationsSwitch setValue: 1];
+	[_launchExecutablesSwitch setValue: 0];
 	[_protectSystemFilesSwitch setValue: 1];
 	
 	//Ensure we have a clean filetype cell array
-	if (_associationsCells != nil)
-		[_associationsCells makeObjectsPerformSelector: @selector(release)];
 	[_associationsCells release];				
 	_associationsCells = [[NSMutableArray alloc] init];
 	
 	//Create a cell for adding a filetype
-	[_associationsCells addObject: [[UIPreferencesTextTableCell alloc] init]];
+	UIPreferencesTextTableCell* emptyCell = [[UIPreferencesTextTableCell alloc] init];
+	[_associationsCells addObject: emptyCell];
+	[emptyCell release];
 		
 	//Read in settings to replace defaults
+	BOOL foundFileTypeAssociations = FALSE;
 	if ([[NSFileManager defaultManager] isReadableFileAtPath: _settingsPath])
 	{
 		NSDictionary* settingsDict = [NSDictionary dictionaryWithContentsOfFile: _settingsPath];
@@ -195,6 +211,10 @@
 			{
 				[_launchApplicationsSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
 			}
+			if ([currKey isEqualToString: @"MFLaunchExecutables"])
+			{
+				[_launchExecutablesSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
+			}
 			if ([currKey isEqualToString: @"MFProtectSystemFiles"])
 			{
 				[_protectSystemFilesSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
@@ -213,10 +233,37 @@
 						[_associationsCells insertObject: cell 
 							atIndex: [_associationsCells count] - 1];
 						[[cell textField] setText: fileTypeAssociation];
+						[cell release];
+						
+						foundFileTypeAssociations = TRUE;
 					}
 				}
 			}
 		}		
+	}
+	
+	if (foundFileTypeAssociations == FALSE)
+	{
+		//Init with defaults
+		UIPreferencesTextTableCell* plistCell = [[UIPreferencesTextTableCell alloc] init];
+		[_associationsCells insertObject: plistCell atIndex: [_associationsCells count] - 1];
+		[[plistCell textField] setText: @"plist:com.google.code.MobileTextEdit"];
+		[plistCell release];
+		
+		UIPreferencesTextTableCell* txtCell = [[UIPreferencesTextTableCell alloc] init];
+		[_associationsCells insertObject: txtCell atIndex: [_associationsCells count] - 1];
+		[[txtCell textField] setText: @"txt:com.google.code.MobileTextEdit"];		
+		[txtCell release];
+		
+		UIPreferencesTextTableCell* pngCell = [[UIPreferencesTextTableCell alloc] init];
+		[_associationsCells insertObject: pngCell atIndex: [_associationsCells count] - 1];
+		[[pngCell textField] setText: @"png:com.google.code.MobilePreview"];
+		[pngCell release];
+		
+		UIPreferencesTextTableCell* xmlCell = [[UIPreferencesTextTableCell alloc] init];
+		[_associationsCells insertObject: xmlCell atIndex: [_associationsCells count] - 1];
+		[[xmlCell textField] setText: @"xml:com.google.code.MobileTextEdit"];
+		[xmlCell release];		
 	}
 	
 	[_prefsTable reloadData];
@@ -224,8 +271,7 @@
 
 - (void) writeSettings
 {
-	//Verify settings
-	//TODO: Error message on invalid setting
+	//Verify settings, setting to defaults on bad input
 	BOOL startDirIsDirectory;	
 	NSString* startDir = [[_startupDirCell textField] text];
 	startDir = [startDir stringByStandardizingPath];
@@ -237,6 +283,7 @@
 	startDir = [startDir stringByAbbreviatingWithTildeInPath];
 	NSString* showHiddenFilesValue = [_showHiddenFilesSwitch value] == 0 ? @"0" : @"1";
 	NSString* launchApplicationsValue = [_launchApplicationsSwitch value] == 0 ? @"0" : @"1";
+	NSString* launchExecutablesValue = [_launchExecutablesSwitch value] == 0 ? @"0" : @"1";
 	NSString* protectSystemFilesValue = [_protectSystemFilesSwitch value] == 0 ? @"0" : @"1";
 	NSArray* fileTypeAssociations = [self fileTypeAssociations];
 	
@@ -245,6 +292,7 @@
 		startDir, @"MFStartupDir",
 		showHiddenFilesValue, @"MFShowHiddenFiles",
 		launchApplicationsValue, @"MFLaunchApplications",
+		launchExecutablesValue, @"MFLaunchExecutables",
 		protectSystemFilesValue, @"MFProtectSystemFiles",
 		fileTypeAssociations, @"MFFileTypeAssociations",
 		nil];
@@ -261,7 +309,7 @@
 
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
 {
-	return 6;
+	return 4;
 }
 
 - (int) preferencesTable: (UIPreferencesTable*)table 
@@ -270,11 +318,9 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 4;
+		case 1: return 5;
 		case 2: return 0;
-		case 3: return 4;
-		case 4: return 2;
-		case 5: return [_associationsCells count];
+		case 3: return [_associationsCells count];
 		default: return 0;
     }
 }
@@ -286,10 +332,8 @@
 	{
 		case 0: return _filesystemGroup;
 		case 1: return _filesystemGroup;
-		case 2: return _styleGroup;
-		case 3: return _styleGroup;
-		case 4: return _associationsGroup;
-		case 5: return _associationsGroup;
+		case 2: return _associationsGroup;
+		case 3: return _associationsGroup;
 		default: return nil;
 	}
 } 
@@ -303,8 +347,6 @@
 		case 1: return FALSE;
 		case 2: return TRUE;
 		case 3: return FALSE;
-		case 4: return TRUE;
-		case 5: return FALSE;
 		default: return TRUE;
 	}
 }
@@ -319,13 +361,7 @@
 	switch (group)
 	{
 		case 0: return groupLabelSize;
-		case 2:	return groupLabelSize;
-		case 4:	
-			switch (row)
-			{
-				case 0: return groupLabelSize;
-				case 1: return proposed;
-			}
+		case 2: return groupLabelSize;
 		default: return proposed;
 	}
 }
@@ -343,24 +379,11 @@
 				case 0:	return _startupDirCell;
 				case 1: return _showHiddenFilesCell;
 				case 2: return _launchApplicationsCell;
-				case 3: return _protectSystemFilesCell;
+				case 3: return _launchExecutablesCell;
+				case 4: return _protectSystemFilesCell;
 			}
-		case 2: return _styleGroup;
-		case 3:
-			switch (row)
-			{
-				case 0:	return _barStyleCell;
-				case 1:	return _buttonStyleCell;
-				case 2:	return _browserBackgroundCell;
-				case 3:	return _iconSizeCell;
-			}
-		case 4: 
-			switch (row)
-			{
-				case 0: return _associationsGroup;
-				case 1: return _associationsDescription;
-			}
-		case 5: return [_associationsCells objectAtIndex: row];		
+		case 2: return _associationsGroup;
+		case 3: return [_associationsCells objectAtIndex: row];		
 		default: return nil;
 	}
 }

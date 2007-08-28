@@ -54,8 +54,11 @@
 	//Settings
 	BOOL _showHiddenFiles;
 	BOOL _launchApplications;
+	BOOL _launchExecutables;
 	BOOL _protectSystemFiles;
 	NSArray* _fileTypeAssociations;
+	NSString* _mandatoryLaunchApplication;
+	int _imageSize;
 	
 	//Rename feature
 	CGRect _fileviewTableRect;
@@ -65,20 +68,26 @@
 	NSString* _lastSelectedPath;
 }
 - (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect;
+- (void) dealloc;
 - (NSString*) absolutePath: (NSString*) path;
 - (NSString*) currentDirectory;
-- (NSString*) currentHighlightedPath;
+- (NSString*) currentSelectedPath;
 - (BOOL) launchApplications;
+- (BOOL) launchExecutables;
 - (BOOL) showHiddenFiles;
 - (BOOL) protectSystemFiles;
 - (NSArray*) fileTypeAssociations;
+- (NSString*) mandatoryLaunchApplication;
 - (void) setDelegate: (id)delegate;
 - (void) setLaunchApplications: (BOOL)launchApplications;
+- (void) setLaunchExecutables: (BOOL)launchExecutables;
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
+- (void) setMandatoryLaunchApplication: (NSString*)appID;
 - (void) refreshFileView;
-- (void) highlightPath: (NSString*)path;
+- (void) selectPath: (NSString*)path;
+- (void) selectRow: (int)row;
 - (void) openPath: (NSString*)path;
 - (UIImage*) determineFileIcon: (NSString*)absolutePath;
 - (void) changeDirectoryToRoot;
@@ -97,6 +106,6 @@
 //Protocol for browser state change notifications
 @interface NSObject (MFBrowserStateChange)
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
-- (void) browserCurrentHighlightedPathChanged: (MFBrowser*)browser toPath: (NSString*)path;
+- (void) browserCurrentSelectedPathChanged: (MFBrowser*)browser toPath: (NSString*)path;
 @end
 

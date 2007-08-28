@@ -54,10 +54,14 @@
 	withApplication: (UIApplication*)app
 {
 	//TODO: Is an empty arguments array valid on read?
+	NSArray* args = [[NSArray alloc] init];
+	
 	[MSAppLauncher launchApplication: appID
-		withArguments: [[NSArray alloc] init]
+		withArguments: args 
 		withLaunchingAppID: launchingAppID
 		withApplication: app];
+		
+	[args release];
 }
 
 + (void) launchApplication: (NSString*)appID 
@@ -84,6 +88,8 @@
 	//Write launch info file
 	NSString* launchPListPath = [MSAppLauncher launchInfoPathForAppID: appID withApplication: app];
 	[rawPList writeToFile: launchPListPath atomically: YES];
+	
+	[plist release];
 	
 	//Actually launch application (Thanks Launcher.app dev team!)
 	[MSAppLauncher launchApplication: appID withApplication: app];
