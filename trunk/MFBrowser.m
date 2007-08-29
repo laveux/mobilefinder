@@ -315,7 +315,7 @@
 - (void) openPath: (NSString*)path
 {
 	//Get path extension and absolute path
-	NSString* extension = [path pathExtension];
+	NSString* extension = [[path pathExtension] lowercaseString];
 	NSString* absolutePath = [self absolutePath: path];
 	
 	//Ensure that we are not entering a protected system file
@@ -467,7 +467,7 @@
 	BOOL isWritable = [_fileManager isWritableFileAtPath: path];
 	BOOL isExecutable = [_fileManager isExecutableFileAtPath: path];
 	BOOL isDeletable = [_fileManager isDeletableFileAtPath: path];
-	NSString* extension = [path pathExtension];
+	NSString* extension = [[path pathExtension] lowercaseString];
 	
 	//Build image name from extension and image size
 	NSString* imageSuffix = [[[[[[NSString string]

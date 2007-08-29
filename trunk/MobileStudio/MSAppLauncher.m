@@ -30,18 +30,6 @@
 
 @implementation MSAppLauncher : NSObject
 
-+ (NSString*) msDirPathWithApplication: (UIApplication*)app
-{
-	return [[app userLibraryDirectory] stringByAppendingPathComponent: @"MobileStudio"];
-}
-
-+ (NSString*) launchInfoPathForAppID: (NSString*)appID withApplication: app
-{
-	return [[[MSAppLauncher msDirPathWithApplication: app] 
-		stringByAppendingPathComponent: appID]
-		stringByAppendingPathExtension: @"plist"];
-}
-
 + (void) launchApplication: (NSString*)appID
 	withApplication: (UIApplication*)app
 {
@@ -157,6 +145,18 @@
 		return nil;
 	else
 		return [args objectAtIndex: 0];
+}
+
++ (NSString*) msDirPathWithApplication: (UIApplication*)app
+{
+	return [[app userLibraryDirectory] stringByAppendingPathComponent: @"MobileStudio"];
+}
+
++ (NSString*) launchInfoPathForAppID: (NSString*)appID withApplication: app
+{
+	return [[[MSAppLauncher msDirPathWithApplication: app] 
+		stringByAppendingPathComponent: appID]
+		stringByAppendingPathExtension: @"plist"];
 }
 
 @end
