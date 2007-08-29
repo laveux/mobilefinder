@@ -30,9 +30,6 @@
 @interface MSAppLauncher : NSObject
 {
 }
-
-+ (NSString*) msDirPathWithApplication: (UIApplication*)app;
-+ (NSString*) launchInfoPathForAppID: (NSString*)appID withApplication: app;
 + (void) launchApplication: (NSString*)appID
 	withApplication: (UIApplication*)app;
 + (void) launchApplication: (NSString*)appID 
@@ -46,5 +43,7 @@
 + (id) readLaunchInfoKey: (NSString*)key forAppID: (NSString*)appID withApplication: app deletingLaunchPList: (BOOL)deleteLaunchPList;
 + (NSArray*) readLaunchInfoArgumentsForAppID: (NSString*)appID withApplication: app deletingLaunchPList: (BOOL)deleteLaunchPList;
 + (NSString*) readLaunchInfoArgumentForAppID: (NSString*)appID withApplication: app deletingLaunchPList: (BOOL)deleteLaunchPList;
++ (NSString*) msDirPathWithApplication: (UIApplication*)app;
++ (NSString*) launchInfoPathForAppID: (NSString*)appID withApplication: app;
 
 @end

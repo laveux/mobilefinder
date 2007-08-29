@@ -242,28 +242,31 @@
 		}		
 	}
 	
+	//Init with defaults
 	if (foundFileTypeAssociations == FALSE)
 	{
-		//Init with defaults
-		UIPreferencesTextTableCell* plistCell = [[UIPreferencesTextTableCell alloc] init];
-		[_associationsCells insertObject: plistCell atIndex: [_associationsCells count] - 1];
-		[[plistCell textField] setText: @"plist:com.google.code.MobileTextEdit"];
-		[plistCell release];
+		NSArray* defaultAssociations = [[NSArray alloc] initWithObjects:
+			@"plist:com.google.code.MobileTextEdit",
+			@"txt:com.google.code.MobileTextEdit",
+			@"xml:com.google.code.MobileTextEdit"
+			@"gif:com.google.code.MobilePreview",
+			@"jpg:com.google.code.MobilePreview",
+			@"jpeg:com.google.code.MobilePreview",
+			@"png:com.google.code.MobilePreview",
+			@"tiff:com.google.code.MobilePreview",
+			nil];
 		
-		UIPreferencesTextTableCell* txtCell = [[UIPreferencesTextTableCell alloc] init];
-		[_associationsCells insertObject: txtCell atIndex: [_associationsCells count] - 1];
-		[[txtCell textField] setText: @"txt:com.google.code.MobileTextEdit"];		
-		[txtCell release];
+		NSEnumerator* enumerator = [defaultAssociations objectEnumerator];
+		NSString* association;
+		while (association = [enumerator nextObject])
+		{
+			UIPreferencesTextTableCell* cell = [[UIPreferencesTextTableCell alloc] init];
+			[_associationsCells insertObject: cell atIndex: [_associationsCells count] - 1];
+			[[cell textField] setText: association];
+			[cell release];
+		}
 		
-		UIPreferencesTextTableCell* pngCell = [[UIPreferencesTextTableCell alloc] init];
-		[_associationsCells insertObject: pngCell atIndex: [_associationsCells count] - 1];
-		[[pngCell textField] setText: @"png:com.google.code.MobilePreview"];
-		[pngCell release];
-		
-		UIPreferencesTextTableCell* xmlCell = [[UIPreferencesTextTableCell alloc] init];
-		[_associationsCells insertObject: xmlCell atIndex: [_associationsCells count] - 1];
-		[[xmlCell textField] setText: @"xml:com.google.code.MobileTextEdit"];
-		[xmlCell release];		
+		[defaultAssociations release];
 	}
 	
 	[_prefsTable reloadData];
