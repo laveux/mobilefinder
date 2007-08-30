@@ -6,6 +6,8 @@ Begun: Aug/10/2007
 Thanks: iPhone Dev Team
 Compilation Toolchain and Hello World Applicaiton
 
+Thanks: jasonsmith for the icon.
+
 Install Instructions:
 1. Jailbreak iPhone and install ssh/sftp (see http://iphone.fiveforty.net/wiki/index.php/How_to_Escape_Jail)
 2. Put Finder.app into /Applications on your iPhone using an sftp program (Cyberduck)
