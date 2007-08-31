@@ -41,7 +41,6 @@
 	withLaunchingAppID: (NSString*)launchingAppID 
 	withApplication: (UIApplication*)app
 {
-	//TODO: Is an empty arguments array valid on read?
 	NSArray* args = [[NSArray alloc] init];
 	
 	[MSAppLauncher launchApplication: appID
