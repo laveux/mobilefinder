@@ -107,5 +107,6 @@
 @interface NSObject (MFBrowserStateChange)
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
 - (void) browserCurrentSelectedPathChanged: (MFBrowser*)browser toPath: (NSString*)path;
+- (void) browserWillLaunchApplication: (NSString*)appID withArguments: (NSArray*)args;
 @end
 

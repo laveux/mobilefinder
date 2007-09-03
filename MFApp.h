@@ -47,7 +47,7 @@
 	UINavBarButton* _deleteButton;
 	UINavBarButton* _renameButton;
 	UINavBarButton* _newButton;
-	
+		
 	NSString* _pathSelectedForFileOp;
 }
 - (void) runApplication;

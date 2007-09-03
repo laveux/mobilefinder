@@ -53,9 +53,9 @@
 	
 	//Initialize window
 	_window = [[UIWindow alloc] initWithContentRect: [UIHardware fullScreenApplicationContentRect]];
-    [_window orderFront: self];
-    [_window makeKey: self];
-    [_window _setHidden: NO];
+	[_window orderFront: self];
+	[_window makeKey: self];
+	[_window _setHidden: YES];
 	
 	//Setup main view
     struct CGRect screenRect = [UIHardware fullScreenApplicationContentRect];
@@ -183,6 +183,10 @@
 			screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
 	[_browser setDelegate: self];
 	
+	//Make the browser active at start
+	[self makeSettingsActive];
+	[self makeBrowserActive];
+	
 	//Get launch information
 	//If we were launched using another AppLauncher-aware program, enter the mandatory app launch mode
 	NSDictionary* launchInfo = [MSAppLauncher readLaunchInfoForAppID: _applicationID
@@ -197,17 +201,17 @@
 			if ([currKey isEqualToString: @"MSLaunchingAppIdentifier"])
 			{
 				//TODO: Need visual comment on mode of operation?
-				NSString* mandatoryAppID = [launchInfo valueForKey: currKey];
-				[_browser setMandatoryLaunchApplication: mandatoryAppID];
+				NSString* launchingAppID = [launchInfo valueForKey: currKey];
+				[_browser setMandatoryLaunchApplication: launchingAppID];
+				[_browser openPath: [_settings startupPathForApplication: launchingAppID]];
 			}
 		}
-	}		
-	
-	//Make the browser active at start
-	[self makeBrowserActive];
-	
-	//Open the start directory
-	[_browser openPath: [_settings startupDirPath]];
+	}
+	else
+	{
+		//Open the default start directory
+		[_browser openPath: [_settings startupPath]];
+	}
 }
 
 - (void) dealloc
@@ -227,6 +231,8 @@
 	[_newButton release];
 	
 	[_pathSelectedForFileOp release];
+	
+	NSLog(@"Dealloc called on MFApp");
 	
 	[super dealloc];
 }
@@ -481,11 +487,126 @@
 	
 }
 
-- (void) applicationDidFinishLaunching: (id)unused
+- (void) browserWillLaunchApplication: (NSString*)appID withArguments: (NSArray*)args
 {
-	//Run Application
-	[self runApplication];    
+	NSLog(@"Can set startup path for %@ to %@?", appID, [_browser currentDirectory]);
+	//Save startup path for application
+	if ([_browser mandatoryLaunchApplication] != nil)
+	{
+		[_settings setStartupPath: [_browser currentDirectory] 
+			forApplication: [_browser mandatoryLaunchApplication]];
+		[_settings writeSettings];
+		NSLog(@"Set startup path for %@ to %@", appID, [_browser currentDirectory]);
+	}
+	[self suspendWithAnimation: FALSE];
 }
 
-@end //MFApp
+- (void) applicationDidFinishLaunching: (id)unknown
+{
+	//Run Application
+	if (_applicationID == nil)
+	{
+		[self runApplication];						
+	}
+	
+	[_window _setHidden: NO];
+	[self reportAppLaunchFinished];	
+}
+
+- (void) applicationSuspend: (id)unknown1 settings: (id)unknown2
+{
+	if ([_settings startupInLastPath] == TRUE)
+	{
+		[_settings setStartupPath: [_browser currentDirectory]];
+	}
+	[self applicationSuspended: nil];
+}
+
+- (void) applicationResume: (struct __GSEvent *)unknown
+{
+	[self applicationDidResume];
+}
+
+//These Methods track delegate calls made to the application
+- (NSMethodSignature*)methodSignatureForSelector:(SEL)selector 
+{
+	NSLog(@"Requested method for selector: %@", NSStringFromSelector(selector));
+	return [super methodSignatureForSelector:selector];
+}
+
+- (BOOL)respondsToSelector:(SEL)aSelector 
+{
+	NSLog(@"Request for selector: %@", NSStringFromSelector(aSelector));
+	return [super respondsToSelector:aSelector];
+}
+
+- (void)forwardInvocation:(NSInvocation *)anInvocation 
+{
+	NSLog(@"Called from: %@", NSStringFromSelector([anInvocation selector]));
+	[super forwardInvocation:anInvocation];
+}
+
+/*
+Application Selector Notes
+
+2007-09-01 14:52:37.801 Finder[193:d03] Request for selector: applicationDidFinishLaunching:
+2007-09-01 14:52:39.152 Finder[193:d03] Request for selector: browserCurrentSelectedPathChanged:toPath:
+2007-09-01 14:52:39.155 Finder[193:d03] Request for selector: browserCurrentDirectoryChanged:toPath:
+2007-09-01 14:52:39.388 Finder[193:d03] Request for selector: browserCurrentSelectedPathChanged:toPath:
+2007-09-01 14:52:39.390 Finder[193:d03] Request for selector: browserCurrentDirectoryChanged:toPath:
+2007-09-01 14:52:39.874 Finder[193:d03] Request for selector: browserCurrentSelectedPathChanged:toPath:
+2007-09-01 14:52:39.876 Finder[193:d03] Request for selector: browserCurrentDirectoryChanged:toPath:
+2007-09-01 14:52:53.676 Finder[193:d03] Request for selector: navigationBar:buttonClicked:
+2007-09-01 14:52:53.759 Finder[193:d03] Request for selector: browserCurrentSelectedPathChanged:toPath:
+2007-09-01 14:52:53.761 Finder[193:d03] Request for selector: browserCurrentDirectoryChanged:toPath:
+2007-09-01 14:53:03.965 Finder[193:d03] Request for selector: browserCurrentSelectedPathChanged:toPath:
+2007-09-01 14:53:12.501 Finder[193:d03] Request for selector: browserCurrentSelectedPathChanged:toPath:
+2007-09-01 14:53:12.505 Finder[193:d03] Launching with app: com.google.code.MobileTextEdit arguments: /var/root/untitled.txt
+2007-09-01 14:53:25.950 Finder[193:d03] Request for selector: applicationResume:settings:
+2007-09-01 14:53:46.124 Finder[193:d03] Request for selector: animationWillStart:context:
+2007-09-01 14:53:46.128 Finder[193:d03] Request for selector: animationWillStart:
+2007-09-01 14:53:46.623 Finder[193:d03] Request for selector: _finishSuspension
+2007-09-01 14:53:46.643 Finder[193:d03] Request for selector: applicationSuspend:settings:
+
+- (void) applicationDidFinishLaunchingSuspended: (id) unknown
+{
+	//Run Application
+	if (_applicationID == nil)
+	{
+		[self runApplicationSuspended: TRUE];		
+	}
+	
+	[_window _setHidden: YES];
+	[self reportAppLaunchFinished];
+}
+
+- (void) animationWillStart: (id)unknown1 context: (id)unknown2
+{
+
+}
+
+- (void) animationWillStart: (id)unknown
+{
+
+}
+
+- (void) applicationResume: (struct __GSEvent *)unknown
+{
+	[_window _setHidden: NO];
+}
+
+- (void) applicationResume: (struct __GSEvent *)unknown1 withArguments:(id)unknown2
+{
+	[_window _setHidden: NO];
+}
+
+- (void)deviceOrientationChanged:(GSEvent *)event {
+	textView = [[UITextView alloc] initWithFrame: CGRectMake(0.0f, 40.0f, 320.0f, 245.0f - 40.0f)];
+	[_mainView addSubview:textView];
+	
+	[textView setText: test];
+}
+*/
+
+@end
 
