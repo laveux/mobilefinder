@@ -64,6 +64,10 @@
 	[_filesystemGroup setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];	
 	_startupDirCell = [[UIPreferencesTextTableCell alloc] init];	
 	[_startupDirCell setTitle: @"Startup"];
+	_startupInLastPathCell = [[UIPreferencesTableCell alloc] init];
+	[_startupInLastPathCell setTitle: @"Start In Last Location"];
+	_startupInLastPathSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_startupInLastPathCell addSubview: _startupInLastPathSwitch];
 	_showHiddenFilesCell = [[UIPreferencesTableCell alloc] init];
 	[_showHiddenFilesCell setTitle: @"Show Hidden Files"];
 	_showHiddenFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
@@ -85,7 +89,7 @@
 	_associationsGroup = [[UIPreferencesTableCell alloc] init];
 	[_associationsGroup setTitle: @"File Associations"];
 	[_associationsGroup setIcon: [UIImage applicationImageNamed: @"File_32x32.png"]];
-		
+	
 	//Read in settings from settings plist
 	_settingsPath = [[NSString alloc] initWithString: settingsPath];
 	[self readSettings];
@@ -99,6 +103,7 @@
 - (void) dealloc
 {	
 	[_filesystemGroup release];
+	[_startupInLastPathCell release];
 	[_startupDirCell release];
 	[_showHiddenFilesCell release];
 	[_launchApplicationsCell release];
@@ -107,10 +112,13 @@
 	[_associationsGroup release];
 	[_associationsCells release];
 	
+	[_startupInLastPathSwitch release];
 	[_showHiddenFilesSwitch release];
 	[_launchApplicationsSwitch release];
 	[_launchExecutablesSwitch release];
 	[_protectSystemFilesSwitch release];
+	
+	[_applicationStartupPaths release];
 	
 	[_settingsPath release];
 
@@ -119,9 +127,24 @@
 	[super dealloc];
 }
 
-- (NSString*) startupDirPath
+- (id) delegate
 {
-	return [[_startupDirCell textField] text];
+	return _delegate;
+}
+
+- (NSString*) startupPath
+{
+	return [[[_startupDirCell textField] text] stringByStandardizingPath];
+}
+
+- (NSString*) startupPathForApplication: (NSString*)appID
+{
+	return [_applicationStartupPaths objectForKey: appID];
+}
+
+- (BOOL) startupInLastPath
+{
+	return [_startupInLastPathSwitch value] != 0;
 }
 
 - (BOOL) showHiddenFiles
@@ -172,15 +195,48 @@
 	_delegate = [delegate retain];
 }
 
-- (void) readSettings
+- (void) setStartupPath: (NSString*)startupPath
 {
-	//Set defaults for simple settings
-	[[_startupDirCell textField] setText: @"/Applications"];
-	[_showHiddenFilesSwitch setValue: 0];
-	[_launchApplicationsSwitch setValue: 1];
-	[_launchExecutablesSwitch setValue: 0];
-	[_protectSystemFilesSwitch setValue: 1];
-	
+	BOOL isDirectory;
+	if ([[NSFileManager defaultManager] fileExistsAtPath: [startupPath stringByStandardizingPath]
+		isDirectory: &isDirectory] && isDirectory)
+	{
+		[[_startupDirCell textField] setText: startupPath];
+	}
+}
+
+- (void) setStartupPath: (NSString*)path forApplication: (NSString*)appID
+{
+	[_applicationStartupPaths setObject: path forKey: appID];
+}
+
+- (void) setStartupInLastPath: (BOOL)startupInLastPath
+{
+	[_startupInLastPathSwitch setValue: (startupInLastPath == TRUE ? 1 : 0)];
+}
+
+- (void) setShowHiddenFiles: (BOOL)showHiddenFiles
+{
+	[_showHiddenFilesSwitch setValue: (showHiddenFiles == TRUE ? 1 : 0)];
+}
+
+- (void) setLaunchApplications: (BOOL)launchApplications
+{
+	[_launchApplicationsSwitch setValue: (launchApplications == TRUE ? 1 : 0)];
+}
+
+- (void) setLaunchExecutables: (BOOL)launchExecutables
+{
+	[_launchExecutablesSwitch setValue: (launchExecutables == TRUE ? 1 : 0)];
+}
+
+- (void) setProtectSystemFiles: (BOOL)protectSystemFiles
+{
+	[_protectSystemFilesSwitch setValue: (protectSystemFiles == TRUE ? 1 : 0)];
+}
+
+- (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations
+{
 	//Ensure we have a clean filetype cell array
 	[_associationsCells release];				
 	_associationsCells = [[NSMutableArray alloc] init];
@@ -189,35 +245,73 @@
 	UIPreferencesTextTableCell* emptyCell = [[UIPreferencesTextTableCell alloc] init];
 	[_associationsCells addObject: emptyCell];
 	[emptyCell release];
+	
+	//Create cells for all of the file type associations passed
+	NSEnumerator* enumerator = [fileTypeAssociations objectEnumerator];
+	NSString* fileTypeAssociation;
+	while (fileTypeAssociation = [enumerator nextObject])
+	{					
+		UIPreferencesTextTableCell* cell = [[UIPreferencesTextTableCell alloc] init];
+		[_associationsCells insertObject: cell 
+			atIndex: [_associationsCells count] - 1];
+		[[cell textField] setText: fileTypeAssociation];
+		[cell release];			
+	}
+}
+
+- (void) readSettings
+{
+	//Set defaults for simple settings
+	[self setStartupPath: @"/Applications"];
+	[self setStartupInLastPath: TRUE];
+	[self setShowHiddenFiles: FALSE];
+	[self setLaunchApplications: TRUE];
+	[self setLaunchExecutables: FALSE];
+	[self setProtectSystemFiles: TRUE];	
+	
+	//Ensure we have a clean application startup array
+	[_applicationStartupPaths release];
+	_applicationStartupPaths = [[NSMutableDictionary alloc] init];
 		
 	//Read in settings to replace defaults
 	BOOL foundFileTypeAssociations = FALSE;
+	BOOL foundStartPaths = FALSE;
 	if ([[NSFileManager defaultManager] isReadableFileAtPath: _settingsPath])
 	{
 		NSDictionary* settingsDict = [NSDictionary dictionaryWithContentsOfFile: _settingsPath];
 		NSEnumerator* enumerator = [settingsDict keyEnumerator];
 		NSString* currKey;
-		while (currKey = [enumerator nextObject]) 
+		while (currKey = [enumerator nextObject])
 		{					
 			if ([currKey isEqualToString: @"MFStartupDir"])
 			{
-				[[_startupDirCell textField] setText: [[settingsDict valueForKey: currKey] stringByAbbreviatingWithTildeInPath]];
+				[self setStartupPath: [settingsDict valueForKey: currKey]];
+			}
+			if ([currKey isEqualToString: @"MFApplicationStartupPaths"])
+			{
+				[_applicationStartupPaths release];
+				_applicationStartupPaths = [settingsDict objectForKey: currKey];
+				[_applicationStartupPaths retain];
+			}
+			if ([currKey isEqualToString: @"MFStartupInLastPath"])
+			{
+				[self setStartupInLastPath: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
 			if ([currKey isEqualToString: @"MFShowHiddenFiles"])
 			{
-				[_showHiddenFilesSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
+				[self setShowHiddenFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
 			if ([currKey isEqualToString: @"MFLaunchApplications"])
 			{
-				[_launchApplicationsSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
+				[self setLaunchApplications: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
 			if ([currKey isEqualToString: @"MFLaunchExecutables"])
 			{
-				[_launchExecutablesSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
+				[self setLaunchExecutables: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
 			if ([currKey isEqualToString: @"MFProtectSystemFiles"])
 			{
-				[_protectSystemFilesSwitch setValue: [[settingsDict valueForKey: currKey] intValue]];
+				[self setProtectSystemFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
 			if ([currKey isEqualToString: @"MFFileTypeAssociations"])
 			{
@@ -225,24 +319,14 @@
 				NSArray* fileTypeAssociations = [settingsDict objectForKey: currKey];
 				if (fileTypeAssociations != nil && [fileTypeAssociations count] > 0)
 				{
-					NSEnumerator* enumerator = [fileTypeAssociations objectEnumerator];
-					NSString* fileTypeAssociation;
-					while (fileTypeAssociation = [enumerator nextObject])
-					{					
-						UIPreferencesTextTableCell* cell = [[UIPreferencesTextTableCell alloc] init];
-						[_associationsCells insertObject: cell 
-							atIndex: [_associationsCells count] - 1];
-						[[cell textField] setText: fileTypeAssociation];
-						[cell release];
-						
-						foundFileTypeAssociations = TRUE;
-					}
+					[self setFileTypeAssociations: fileTypeAssociations];					
+					foundFileTypeAssociations = TRUE;
 				}
 			}
 		}		
 	}
 	
-	//Init with defaults
+	//Init file type associaions with defaults, if none were found
 	if (foundFileTypeAssociations == FALSE)
 	{
 		NSArray* defaultAssociations = [[NSArray alloc] initWithObjects:
@@ -256,16 +340,8 @@
 			@"tiff:com.google.code.MobilePreview",
 			nil];
 		
-		NSEnumerator* enumerator = [defaultAssociations objectEnumerator];
-		NSString* association;
-		while (association = [enumerator nextObject])
-		{
-			UIPreferencesTextTableCell* cell = [[UIPreferencesTextTableCell alloc] init];
-			[_associationsCells insertObject: cell atIndex: [_associationsCells count] - 1];
-			[[cell textField] setText: association];
-			[cell release];
-		}
-		
+		[self setFileTypeAssociations: defaultAssociations];
+				
 		[defaultAssociations release];
 	}
 	
@@ -274,7 +350,7 @@
 
 - (void) writeSettings
 {
-	//Verify settings, setting to defaults on bad input
+	//Verify startup path setting
 	BOOL startDirIsDirectory;	
 	NSString* startDir = [[_startupDirCell textField] text];
 	startDir = [startDir stringByStandardizingPath];
@@ -284,20 +360,26 @@
 		startDir = [[NSString alloc] initWithString: @"/Applications"]; 
 	}
 	startDir = [startDir stringByAbbreviatingWithTildeInPath];
+	
+	//Extract plist-able versions of other settings
+	NSString* startupInLastPath = [_startupInLastPathSwitch value] == 0 ? @"0" : @"1";
 	NSString* showHiddenFilesValue = [_showHiddenFilesSwitch value] == 0 ? @"0" : @"1";
 	NSString* launchApplicationsValue = [_launchApplicationsSwitch value] == 0 ? @"0" : @"1";
 	NSString* launchExecutablesValue = [_launchExecutablesSwitch value] == 0 ? @"0" : @"1";
 	NSString* protectSystemFilesValue = [_protectSystemFilesSwitch value] == 0 ? @"0" : @"1";
 	NSArray* fileTypeAssociations = [self fileTypeAssociations];
+	NSDictionary* applicationStartupPaths = _applicationStartupPaths;
 	
 	//Build settings dictionary
 	NSDictionary* settingsDict = [[NSDictionary alloc] initWithObjectsAndKeys:
 		startDir, @"MFStartupDir",
+		startupInLastPath, @"MFStartupInLastPath",
 		showHiddenFilesValue, @"MFShowHiddenFiles",
 		launchApplicationsValue, @"MFLaunchApplications",
 		launchExecutablesValue, @"MFLaunchExecutables",
 		protectSystemFilesValue, @"MFProtectSystemFiles",
 		fileTypeAssociations, @"MFFileTypeAssociations",
+		applicationStartupPaths, @"MFApplicationStartupPaths",
 		nil];
 	
 	//Seralize settings dictionary
@@ -321,7 +403,7 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 5;
+		case 1: return 6;
 		case 2: return 0;
 		case 3: return [_associationsCells count];
 		default: return 0;
@@ -380,10 +462,11 @@
 			switch (row)
 			{
 				case 0:	return _startupDirCell;
-				case 1: return _showHiddenFilesCell;
-				case 2: return _launchApplicationsCell;
-				case 3: return _launchExecutablesCell;
-				case 4: return _protectSystemFilesCell;
+				case 1: return _startupInLastPathCell;
+				case 2: return _showHiddenFilesCell;
+				case 3: return _launchApplicationsCell;
+				case 4: return _launchExecutablesCell;
+				case 5: return _protectSystemFilesCell;
 			}
 		case 2: return _associationsGroup;
 		case 3: return [_associationsCells objectAtIndex: row];		

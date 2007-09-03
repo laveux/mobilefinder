@@ -42,6 +42,7 @@
 	
 	UIPreferencesTableCell* _filesystemGroup;
 	UIPreferencesTextTableCell* _startupDirCell;
+	UIPreferencesTableCell* _startupInLastPathCell;
 	UIPreferencesTableCell* _showHiddenFilesCell;
 	UIPreferencesTableCell* _launchApplicationsCell;
 	UIPreferencesTableCell* _launchExecutablesCell;
@@ -50,23 +51,37 @@
 	UIPreferencesTableCell* _associationsGroup;
 	NSMutableArray* _associationsCells;
 	
+	UISwitchControl* _startupInLastPathSwitch;
 	UISwitchControl* _showHiddenFilesSwitch;
 	UISwitchControl* _launchApplicationsSwitch;
 	UISwitchControl* _launchExecutablesSwitch;
 	UISwitchControl* _protectSystemFilesSwitch;
+	
+	NSMutableDictionary* _applicationStartupPaths;
 	
 	NSString* _settingsPath;
 	id _delegate;
 }
 - (id) initWithFrame: (struct CGRect)rect withSettingsPath: (NSString*)settingsPath;
 - (void) dealloc;
-- (NSString*) startupDirPath;
+- (id) delegate;
+- (NSString*) startupPath;
+- (BOOL) startupInLastPath;
 - (BOOL) showHiddenFiles;
 - (BOOL) launchApplications;
 - (BOOL) launchExecutables;
 - (BOOL) protectSystemFiles;
 - (NSArray*) fileTypeAssociations;
+- (NSString*) startupPathForApplication: (NSString*)appID;
 - (void) setDelegate: (id)delegate;
+- (void) setStartupPath: (NSString*)startupPath;
+- (void) setStartupInLastPath: (BOOL)startupInLastPath;
+- (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
+- (void) setLaunchApplications: (BOOL)launchApplications;
+- (void) setLaunchExecutables: (BOOL)launchExecutables;
+- (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
+- (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
+- (void) setStartupPath: (NSString*)path forApplication: (NSString*)appID;
 - (void) readSettings;
 - (void) writeSettings;
 

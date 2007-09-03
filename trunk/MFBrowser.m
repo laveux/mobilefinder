@@ -384,7 +384,17 @@
 				
 				//Launch application by the regular method
 				if (appID != nil)
-					[_application launchApplicationWithIdentifier: appID suspended: NO];
+				{
+					//Let delegate know that we will launch an application
+					if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
+						[_delegate browserWillLaunchApplication: appID 
+							withArguments: nil];			
+					
+					//Launch application without arguments
+					[MSAppLauncher launchApplication: appID 
+						withLaunchingAppID: _applicationID
+						withApplication: _application];
+				}
 			}
 		}
 	}
@@ -399,6 +409,11 @@
 			NSLog(@"Launching with mandatory app: %@", _mandatoryLaunchApplication);
 			//Prepare arguments
 			NSArray* args = [[NSArray alloc] initWithObjects: absolutePath, nil];
+			
+			//Let delegate know that we will launch an application
+			if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
+			[_delegate browserWillLaunchApplication: _mandatoryLaunchApplication 
+				withArguments: args];
 			
 			//Launch application with file as argument
 			[MSAppLauncher launchApplication: _mandatoryLaunchApplication 
@@ -442,6 +457,11 @@
 					//Prepare arguments
 					NSArray* args = [[NSArray alloc] initWithObjects: absolutePath, nil];
 					
+					//Let delegate know that we will launch an application
+					if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
+						[_delegate browserWillLaunchApplication: associationAppID 
+							withArguments: args];
+
 					//Launch application with file as argument
 					[MSAppLauncher launchApplication: associationAppID 
 						withArguments: args

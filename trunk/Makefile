@@ -12,6 +12,10 @@ Finder:	MFMain.o MFApp.o MFBrowser.o MFSettings.o MobileStudio/MSAppLauncher.o
 
 install:
 		cp -f Finder ./Finder.app
+
+upload:
+		echo -e "-mkdir /Applications/Finder.app\n-put ./Finder.app/* /Applications/Finder.app/" |sftp root@iphone -b-
+
 clean:
 		rm -f *.o MobileFinder MobileStudio/*.o
 
