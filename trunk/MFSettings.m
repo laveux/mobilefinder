@@ -59,6 +59,7 @@
 	CGRect switchRect = CGRectMake(200.0f, 9.0f, 320.0f - 200.0f, 32.0f);//[_prefsTable rowHeight]);
 	
 	//Setup filesystem group
+	//TODO: Make settings changes effective immediately
 	_filesystemGroup = [[UIPreferencesTableCell alloc] init];
 	[_filesystemGroup setTitle: @"File System"];
 	[_filesystemGroup setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];	
@@ -184,9 +185,8 @@
 			[fileTypeAssociations addObject: [[NSString alloc] initWithString: fileTypeAssociation]];
 		}
 	}
-	[fileTypeAssociations autorelease];
-	
-	return [NSArray arrayWithArray: fileTypeAssociations];
+		
+	return [fileTypeAssociations autorelease];
 }
 
 - (void) setDelegate: (id)delegate
@@ -289,9 +289,8 @@
 			}
 			if ([currKey isEqualToString: @"MFApplicationStartupPaths"])
 			{
-				[_applicationStartupPaths release];
-				_applicationStartupPaths = [settingsDict objectForKey: currKey];
-				[_applicationStartupPaths retain];
+				NSDictionary* applicationStartupPaths = [settingsDict objectForKey: currKey];
+				[_applicationStartupPaths setDictionary: applicationStartupPaths];
 			}
 			if ([currKey isEqualToString: @"MFStartupInLastPath"])
 			{
