@@ -327,11 +327,47 @@
 			[self openPath: NSHomeDirectory()];
 			return;
 		}
-	}	
+	}
 	
-	//Change to the specified path, if it is a directory
+	//Execute application if this is an application
 	NSString* lastPath = [self currentDirectory];
-	if ([_fileManager changeCurrentDirectoryPath: path])
+	if (_launchApplications == TRUE && [extension isEqualToString: @"app"])
+	{
+		//Check to see if the application directory has an Info.plist
+		NSString* infoPListPath = [path stringByAppendingPathComponent: @"Info.plist"];
+		if ([_fileManager isReadableFileAtPath: path])
+		{
+			//Open the plist and find the application's identifier
+			NSDictionary* plistDict = [NSDictionary dictionaryWithContentsOfFile: infoPListPath];
+			NSEnumerator* enumerator = [plistDict keyEnumerator];
+			NSString* key;
+			NSString* appID;
+			while (key = [enumerator nextObject]) 
+			{					
+				if ([key isEqualToString: @"CFBundleIdentifier"])
+				{
+					appID = [plistDict valueForKey: key];
+					break;
+				}
+			}				
+				
+			//Launch application by the regular method
+			if (appID != nil)
+			{
+				//Let delegate know that we will launch an application
+				if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
+					[_delegate browserWillLaunchApplication: appID 
+						withArguments: nil];			
+				
+				//Launch application without arguments
+				[MSAppLauncher launchApplication: appID 
+					withLaunchingAppID: _applicationID
+					withApplication: _application];
+			}
+		}
+	}	
+	//Change to the specified path, if it is a directory
+	else if ([_fileManager changeCurrentDirectoryPath: path])
 	{
 		//Refresh the fileview table
 		[self refreshFileView];	
@@ -360,43 +396,6 @@
 		if ([_delegate respondsToSelector: @selector(browserCurrentDirectoryChanged:toPath:)])
 			[_delegate browserCurrentDirectoryChanged: self 
 				toPath: [[self currentDirectory] stringByStandardizingPath]];
-		
-		//Execute application if this is an application
-		if (_launchApplications == TRUE && [extension isEqualToString: @"app"])
-		{
-			//Check to see if the application directory has an Info.plist
-			NSString* infoPListPath = [path stringByAppendingPathComponent: @"Info.plist"];
-			if ([_fileManager isReadableFileAtPath: path])
-			{
-				//Open the plist and find the application's identifier
-				NSDictionary* plistDict = [NSDictionary dictionaryWithContentsOfFile: infoPListPath];
-				NSEnumerator* enumerator = [plistDict keyEnumerator];
-				NSString* key;
-				NSString* appID;
-				while (key = [enumerator nextObject]) 
-				{					
-					if ([key isEqualToString: @"CFBundleIdentifier"])
-					{
-						appID = [plistDict valueForKey: key];
-						break;
-					}
-				}				
-				
-				//Launch application by the regular method
-				if (appID != nil)
-				{
-					//Let delegate know that we will launch an application
-					if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
-						[_delegate browserWillLaunchApplication: appID 
-							withArguments: nil];			
-					
-					//Launch application without arguments
-					[MSAppLauncher launchApplication: appID 
-						withLaunchingAppID: _applicationID
-						withApplication: _application];
-				}
-			}
-		}
 	}
 	else
 	{

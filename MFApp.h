@@ -34,6 +34,7 @@
 @interface MFApp : UIApplication
 {
 	NSString* _applicationID;
+	NSString* _launchingApplicationID;
 	UIWindow* _window;
 	UIView* _mainView;
 	MFBrowser* _browser;
@@ -52,6 +53,9 @@
 }
 - (void) runApplication;
 - (void) dealloc;
+- (void) resumeApplication;
+- (void) suspendApplication;
+- (void) getLaunchInfo;
 - (void) makeBrowserActive;
 - (void) makeSettingsActive;
 - (void) resetFileOpButtons;
