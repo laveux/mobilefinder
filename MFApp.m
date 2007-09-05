@@ -328,6 +328,8 @@ typedef struct __GSEvent
 	[_browser setLaunchExecutables: [_settings launchExecutables]];
 	[_browser setProtectSystemFiles: [_settings protectSystemFiles]];
 	[_browser setFileTypeAssociations: [_settings fileTypeAssociations]];
+	//TODO: Buffer height setting or constant
+	[_browser setRowHeight: (float)[_settings browserRowHeight] bufferHeight: 4.0f];
 }
 
 - (void) makeSettingsActive
@@ -346,6 +348,9 @@ typedef struct __GSEvent
 	[_mainView addSubview: _settings];
 	[_finderButton setNavBarButtonStyle: 0];
 	[_settingsButton setNavBarButtonStyle: 3];
+	
+	//HACK: This should go in a more proper place
+	//[[UIKeyboard activeKeyboard] deactivate];
 }
 
 - (void) resetFileOpButtons
@@ -570,7 +575,8 @@ typedef struct __GSEvent
 
 - (void) browserWillLaunchApplication: (NSString*)appID withArguments: (NSArray*)args
 {
-		
+	[_settings setStartupPath: [_browser currentDirectory] forApplication: appID];
+	[_settings writeSettings];
 }
 
 
@@ -586,7 +592,7 @@ typedef struct __GSEvent
 	}
 	
 	//Report successful launch
-	[self reportAppLaunchFinished];	
+	[self reportAppLaunchFinished];
 }
 - (void) applicationSuspend: (id)unknown1 settings: (id)unknown2
 {

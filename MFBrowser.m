@@ -37,6 +37,7 @@
 #import <UIKit/UIWindow.h>
 #import <UIKit/UIView.h>
 #import <UIKit/UIView-Hierarchy.h>
+#import <UIKit/UIView-Geometry.h>
 #import <UIKit/UIHardware.h>
 #import <UIKit/UITable.h>
 #import <UIKit/UITableCell.h>
@@ -55,23 +56,11 @@
 - (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect
 {
 	//Init view with frame rect
-	[super initWithFrame: rect];
+	self = [super initWithFrame: rect];
 	
 	//Save application object for launching other apps
 	_application = app;
 	_applicationID = appID;
-	
-	//Setup fileview table
-	_fileviewTableRect = CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height);
-    _fileviewTable = [[UITable alloc] initWithFrame: _fileviewTableRect];
-    _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MobileFinder" identifier: @"Finder" width: rect.size.width];
-	[_fileviewTable addTableColumn: _fileviewTableCol]; 
-    [_fileviewTable setDataSource: self];
-    [_fileviewTable setDelegate: self];
-	[_fileviewTable setRowHeight: 64.0f];
-	[_fileviewTable setResusesTableCells: FALSE];
-	[_fileviewTable reloadData];
-	[self addSubview: _fileviewTable];
 	
 	//Set preference defaults
 	_showHiddenFiles = FALSE;
@@ -81,10 +70,22 @@
 	_fileTypeAssociations = nil;
 	_mandatoryLaunchApplication = nil;
 	//TODO: Variable image sizes fully implemented
-	_imageSize = 64;
+	_rowHeight = 64.0f;
+	_rowHeightBuffer = 2.0f;
 	
 	//Initialize state variables
 	_lastSelectedPath = nil;
+	
+	//Setup fileview table
+	_fileviewTableRect = CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height);
+    _fileviewTable = [[UITable alloc] initWithFrame: _fileviewTableRect];
+    _fileviewTableCol = [[UITableColumn alloc] initWithTitle: @"MobileFinder" identifier: @"Finder" width: rect.size.width];
+	[_fileviewTable addTableColumn: _fileviewTableCol]; 
+    [_fileviewTable setDataSource: self];
+    [_fileviewTable setDelegate: self];
+	[_fileviewTable setResusesTableCells: FALSE];
+	[_fileviewTable reloadData];
+	[self addSubview: _fileviewTable];
 	
 	//Create keyboard with which to rename files
 	//TODO: Make return button finish filename
@@ -102,6 +103,7 @@
 	//List root
 	_fileManager = [NSFileManager defaultManager];
 	[self changeDirectoryToApplications];
+	[self setRowHeight: _rowHeight bufferHeight: _rowHeightBuffer];
 	
 	return self;
 }
@@ -231,6 +233,15 @@
 	_mandatoryLaunchApplication = [appID copy];
 }
 
+- (void) setRowHeight: (int)rowHeight bufferHeight: (int)rowHeightBuffer
+{
+	_rowHeight = rowHeight;
+	_rowHeightBuffer = rowHeightBuffer;
+	
+	[_fileviewTable setRowHeight: _rowHeight + _rowHeightBuffer];
+	[self refreshFileView];
+}
+
 - (void) refreshFileView
 {
 	//Make sure we have new, empty fileviewCells and fileviewCellFilenames
@@ -254,7 +265,34 @@
 			//Create table cell for filename
 			UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
 			[cell setTitle: filename];	
-			[cell setImage: [self determineFileIcon: filename]];
+			
+			//Setup image view, preserving image aspect ratio (_rowHeight is used for both width and height)
+			UIImage* icon = [self determineFileIcon: filename];
+			UIImageView* iconImageView = [cell iconImageView];
+			[iconImageView setImage: icon];
+			CGRect imageRect = [[cell iconImageView] frame];
+			/*
+			if (imageRect.size.width > _rowHeight || imageRect.size.height > _rowHeight)
+			{
+				float imageAspect = imageRect.size.width / imageRect.size.height;
+				
+				imageRect.size.height = _rowHeight;
+				imageRect.size.width = imageRect.size.height * imageAspect;
+				if (imageRect.size.width > _rowHeight)
+				{
+					imageRect.size.width = _rowHeight;
+					imageRect.size.height = imageRect.size.width / imageAspect;					
+				}
+			}
+			imageRect.origin.x = imageRect.origin.x + 
+				_rowHeight * 0.5f - imageRect.size.width * 0.5f;
+			imageRect.origin.y = imageRect.origin.y + 
+				_rowHeight * 0.5f - imageRect.size.height * 0.5f;
+			*/
+			//Stretch image instead of preserving aspect, as it makes the text on the row skewed
+			imageRect.size.width = _rowHeight;
+			imageRect.size.height = _rowHeight;
+			[iconImageView setFrame: imageRect];
 					
 			//Add filename and cell to collections
 			//Cells and filenames are stored seperately to allow the displayed name to differ from the actual name
@@ -489,12 +527,11 @@
 	NSString* extension = [[path pathExtension] lowercaseString];
 	
 	//Build image name from extension and image size
-	NSString* imageSuffix = [[[[[[NSString string]
-		stringByAppendingString: @"_"]
-		stringByAppendingString: [[NSNumber numberWithInt: _imageSize] stringValue]]
-		stringByAppendingString: @"x"]
-		stringByAppendingString: [[NSNumber numberWithInt: _imageSize] stringValue]]
-		stringByAppendingString: @".png"];
+	NSString* imageSuffix;
+	if (_rowHeight <= 32.0f)
+		imageSuffix = @"_32x32.png";
+	else
+		imageSuffix = @"_64x64.png";
 	
 	//Applications
 	if ([extension isEqualToString: @"app"])
@@ -505,12 +542,22 @@
 		if ([_fileManager isReadableFileAtPath: appIconPath])
 			return [UIImage imageAtPath: appIconPath];
 		else
-			return [UIImage applicationImageNamed: @"Application_64x64.png"];
+			return [UIImage applicationImageNamed: [@"Application" stringByAppendingString: imageSuffix]];
 	}
 	
 	//Check if file is a directory
 	if (isDirectory == TRUE)
 		return [UIImage applicationImageNamed: [@"Folder" stringByAppendingString: imageSuffix]];	
+	
+	//Check if the file is a preview-supported image
+	if ([extension isEqualToString: @"png"] ||
+		[extension isEqualToString: @"jpg"] ||
+		[extension isEqualToString: @"jpeg"] ||
+		[extension isEqualToString: @"gif"] ||
+		[extension isEqualToString: @"tiff"])
+	{
+		return [UIImage imageAtPath: path];
+	}
 	
 	//Check for an image match
 	UIImage* extensionImage = [UIImage applicationImageNamed: [extension stringByAppendingString: imageSuffix]];

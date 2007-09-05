@@ -48,6 +48,9 @@
 	UIPreferencesTableCell* _launchExecutablesCell;
 	UIPreferencesTableCell* _protectSystemFilesCell;
 	
+	UIPreferencesTableCell* _appearenceGroup;
+	UIPreferencesTableCell* _browserRowHeightCell;	
+	
 	UIPreferencesTableCell* _associationsGroup;
 	NSMutableArray* _associationsCells;
 	
@@ -56,6 +59,7 @@
 	UISwitchControl* _launchApplicationsSwitch;
 	UISwitchControl* _launchExecutablesSwitch;
 	UISwitchControl* _protectSystemFilesSwitch;
+	UISliderControl* _browserRowHeightSlider;
 	
 	NSMutableDictionary* _applicationStartupPaths;
 	
@@ -71,6 +75,7 @@
 - (BOOL) launchApplications;
 - (BOOL) launchExecutables;
 - (BOOL) protectSystemFiles;
+- (int) browserRowHeight;
 - (NSArray*) fileTypeAssociations;
 - (NSString*) startupPathForApplication: (NSString*)appID;
 - (void) setDelegate: (id)delegate;
@@ -80,6 +85,7 @@
 - (void) setLaunchApplications: (BOOL)launchApplications;
 - (void) setLaunchExecutables: (BOOL)launchExecutables;
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
+- (void) setBrowserRowHeight: (int)value;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) setStartupPath: (NSString*)path forApplication: (NSString*)appID;
 - (void) readSettings;
