@@ -40,6 +40,7 @@
 #import <UIKit/UIImage.h>
 #import <UIKit/UISliderControl.h>
 #import <UIKit/UISwitchControl.h>
+#import <UIKit/UIKeyboard.h>
 #import "MFSettings.h"
 
 @implementation MFSettings : UIView
@@ -56,7 +57,9 @@
     [_prefsTable setDelegate: self];
 	
 	//Create control frame rects
-	CGRect switchRect = CGRectMake(200.0f, 9.0f, 320.0f - 200.0f, 32.0f);//[_prefsTable rowHeight]);
+	//TODO: Make these orientation-compatible
+	CGRect switchRect = CGRectMake(200.0f, 9.0f, 296.0f - 200.0f, 32.0f);//[_prefsTable rowHeight]);
+	CGRect sliderRect = CGRectMake(100.0f, 9.0f, 296.0f - 100.0f, 32.0f);//[_prefsTable rowHeight]);
 	
 	//Setup filesystem group
 	//TODO: Make settings changes effective immediately
@@ -86,6 +89,18 @@
 	_protectSystemFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
 	[_protectSystemFilesCell addSubview: _protectSystemFilesSwitch];
 	
+	//Setup appearance group
+	_appearenceGroup = [[UIPreferencesTableCell alloc] init];
+	[_appearenceGroup setTitle: @"Appearance"];
+	[_appearenceGroup setIcon: [UIImage applicationImageNamed: @"Finder_32x32.png"]];	
+	_browserRowHeightCell = [[UIPreferencesTableCell alloc] init];
+	[_browserRowHeightCell setTitle: @"Row Size"];
+	_browserRowHeightSlider = [[UISliderControl alloc] initWithFrame: sliderRect];
+	[_browserRowHeightSlider setMinValue: 20];
+	[_browserRowHeightSlider setMaxValue: 128];
+	[_browserRowHeightSlider setShowValue: TRUE];
+	[_browserRowHeightCell addSubview: _browserRowHeightSlider];	
+	
 	//Setup file associations group
 	_associationsGroup = [[UIPreferencesTableCell alloc] init];
 	[_associationsGroup setTitle: @"File Associations"];
@@ -113,12 +128,16 @@
 	[_associationsGroup release];
 	[_associationsCells release];
 	
+	[_appearenceGroup release];
+	[_browserRowHeightCell release];	
+	
 	[_startupInLastPathSwitch release];
 	[_showHiddenFilesSwitch release];
 	[_launchApplicationsSwitch release];
 	[_launchExecutablesSwitch release];
 	[_protectSystemFilesSwitch release];
-	
+	[_browserRowHeightSlider release];
+		
 	[_applicationStartupPaths release];
 	
 	[_settingsPath release];
@@ -166,6 +185,16 @@
 - (BOOL) protectSystemFiles
 {
 	return [_protectSystemFilesSwitch value] != 0;
+}
+
+- (int) browserRowHeight
+{
+	//HACK: Convert "long" return value to float by direct copy because of _objc_msgSend_fpret linker issue
+	long value = [_browserRowHeightSlider value];
+	float finalValue;
+	memcpy(&finalValue, &value, sizeof(long));
+	
+	return finalValue;
 }
 
 - (NSArray*) fileTypeAssociations
@@ -235,6 +264,12 @@
 	[_protectSystemFilesSwitch setValue: (protectSystemFiles == TRUE ? 1 : 0)];
 }
 
+- (void) setBrowserRowHeight: (int)value
+{
+	//TODO: Need to check min and max?
+	[_browserRowHeightSlider setValue: (float)value];
+}
+
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations
 {
 	//Ensure we have a clean filetype cell array
@@ -267,7 +302,8 @@
 	[self setShowHiddenFiles: FALSE];
 	[self setLaunchApplications: TRUE];
 	[self setLaunchExecutables: FALSE];
-	[self setProtectSystemFiles: TRUE];	
+	[self setProtectSystemFiles: TRUE];
+	[self setBrowserRowHeight: 64];	
 	
 	//Ensure we have a clean application startup array
 	[_applicationStartupPaths release];
@@ -312,6 +348,10 @@
 			{
 				[self setProtectSystemFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
+			if ([currKey isEqualToString: @"MFBrowserRowHeight"])
+			{
+				[self setBrowserRowHeight: [[settingsDict valueForKey: currKey] intValue]];
+			}
 			if ([currKey isEqualToString: @"MFFileTypeAssociations"])
 			{
 				//Get filetype associations and create cells for them, inserting behind the empty cell
@@ -337,6 +377,7 @@
 			@"jpeg:com.google.code.MobilePreview",
 			@"png:com.google.code.MobilePreview",
 			@"tiff:com.google.code.MobilePreview",
+			@"gif:com.google.code.MobilePreview",
 			nil];
 		
 		[self setFileTypeAssociations: defaultAssociations];
@@ -361,24 +402,26 @@
 	startDir = [startDir stringByAbbreviatingWithTildeInPath];
 	
 	//Extract plist-able versions of other settings
-	NSString* startupInLastPath = [_startupInLastPathSwitch value] == 0 ? @"0" : @"1";
-	NSString* showHiddenFilesValue = [_showHiddenFilesSwitch value] == 0 ? @"0" : @"1";
-	NSString* launchApplicationsValue = [_launchApplicationsSwitch value] == 0 ? @"0" : @"1";
-	NSString* launchExecutablesValue = [_launchExecutablesSwitch value] == 0 ? @"0" : @"1";
-	NSString* protectSystemFilesValue = [_protectSystemFilesSwitch value] == 0 ? @"0" : @"1";
+	NSString* startupInLastPath = [self startupInLastPath] == FALSE ? @"0" : @"1";
+	NSString* showHiddenFilesValue = [self showHiddenFiles] == FALSE ? @"0" : @"1";
+	NSString* launchApplicationsValue = [self launchApplications] == FALSE ? @"0" : @"1";
+	NSString* launchExecutablesValue = [self launchExecutables] == FALSE ? @"0" : @"1";
+	NSString* protectSystemFilesValue = [self protectSystemFiles] == FALSE ? @"0" : @"1";
+	NSString* browserRowHeight = [[NSNumber numberWithInt: [self browserRowHeight]] stringValue];
 	NSArray* fileTypeAssociations = [self fileTypeAssociations];
 	NSDictionary* applicationStartupPaths = _applicationStartupPaths;
 	
 	//Build settings dictionary
 	NSDictionary* settingsDict = [[NSDictionary alloc] initWithObjectsAndKeys:
 		startDir, @"MFStartupDir",
+		applicationStartupPaths, @"MFApplicationStartupPaths",
 		startupInLastPath, @"MFStartupInLastPath",
 		showHiddenFilesValue, @"MFShowHiddenFiles",
 		launchApplicationsValue, @"MFLaunchApplications",
 		launchExecutablesValue, @"MFLaunchExecutables",
 		protectSystemFilesValue, @"MFProtectSystemFiles",
+		browserRowHeight, @"MFBrowserRowHeight",
 		fileTypeAssociations, @"MFFileTypeAssociations",
-		applicationStartupPaths, @"MFApplicationStartupPaths",
 		nil];
 	
 	//Seralize settings dictionary
@@ -393,7 +436,7 @@
 
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
 {
-	return 4;
+	return 6;
 }
 
 - (int) preferencesTable: (UIPreferencesTable*)table 
@@ -402,9 +445,11 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 6;
+		case 1: return 6;		
 		case 2: return 0;
-		case 3: return [_associationsCells count];
+		case 3: return 1;
+		case 4: return 0;
+		case 5: return [_associationsCells count];
 		default: return 0;
     }
 }
@@ -416,8 +461,10 @@
 	{
 		case 0: return _filesystemGroup;
 		case 1: return _filesystemGroup;
-		case 2: return _associationsGroup;
-		case 3: return _associationsGroup;
+		case 2: return _appearenceGroup;
+		case 3: return _appearenceGroup;
+		case 4: return _associationsGroup;
+		case 5: return _associationsGroup;
 		default: return nil;
 	}
 } 
@@ -431,6 +478,8 @@
 		case 1: return FALSE;
 		case 2: return TRUE;
 		case 3: return FALSE;
+		case 4: return TRUE;
+		case 5: return FALSE;
 		default: return TRUE;
 	}
 }
@@ -446,6 +495,7 @@
 	{
 		case 0: return groupLabelSize;
 		case 2: return groupLabelSize;
+		case 4: return groupLabelSize;
 		default: return proposed;
 	}
 }
@@ -467,8 +517,14 @@
 				case 4: return _launchExecutablesCell;
 				case 5: return _protectSystemFilesCell;
 			}
-		case 2: return _associationsGroup;
-		case 3: return [_associationsCells objectAtIndex: row];		
+		case 2: return _appearenceGroup;
+		case 3:
+			switch (row)
+			{
+				case 0:	return _browserRowHeightCell;
+			}
+		case 4: return _associationsGroup;
+		case 5: return [_associationsCells objectAtIndex: row];		
 		default: return nil;
 	}
 }

@@ -58,7 +58,8 @@
 	BOOL _protectSystemFiles;
 	NSArray* _fileTypeAssociations;
 	NSString* _mandatoryLaunchApplication;
-	int _imageSize;
+	float _rowHeight;
+	float _rowHeightBuffer;
 	
 	//Rename feature
 	CGRect _fileviewTableRect;
@@ -85,6 +86,7 @@
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) setMandatoryLaunchApplication: (NSString*)appID;
+- (void) setRowHeight: (int)rowHeight bufferHeight: (int)rowHeightBuffer;
 - (void) refreshFileView;
 - (void) selectPath: (NSString*)path;
 - (void) selectRow: (int)row;
