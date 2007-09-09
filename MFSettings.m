@@ -42,14 +42,20 @@
 #import <UIKit/UISwitchControl.h>
 #import <UIKit/UIKeyboard.h>
 #import "MFSettings.h"
+#import "MFApp.h"
 
 @implementation MFSettings : UIView
 
 - (id) initWithFrame: (struct CGRect)rect
 	withSettingsPath: (NSString*)settingsPath
+	withMFApp: (MFApp*)app
 {
 	//Init view with frame rect
 	[super initWithFrame: rect];
+	
+	//Save pointer to app
+	_app = app;
+	[app retain];
 	
 	//Setup preferences table
 	_prefsTable = [[UIPreferencesTable alloc] initWithFrame: CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height)];
@@ -58,8 +64,10 @@
 	
 	//Create control frame rects
 	//TODO: Make these orientation-compatible
-	CGRect switchRect = CGRectMake(200.0f, 9.0f, 296.0f - 200.0f, 32.0f);//[_prefsTable rowHeight]);
-	CGRect sliderRect = CGRectMake(100.0f, 9.0f, 296.0f - 100.0f, 32.0f);//[_prefsTable rowHeight]);
+	CGRect switchRect = CGRectMake(rect.size.width - 114.0f, 9.0f, 296.0f - 200.0f, 32.0f);//[_prefsTable rowHeight]);
+	CGRect sliderRect = CGRectMake(rect.size.width - 220.0f, 8.0f, 296.0f - 100.0f, 32.0f);//[_prefsTable rowHeight]);
+	CGRect buttonRect = CGRectMake(rect.size.width - 84.0f, 9.0f, 64.0f, 32.0f);//[_prefsTable rowHeight]);
+	float buttonBuffer = 4.0f;
 	
 	//Setup filesystem group
 	//TODO: Make settings changes effective immediately
@@ -88,18 +96,59 @@
 	[_protectSystemFilesCell setTitle: @"Protect System Files"];
 	_protectSystemFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
 	[_protectSystemFilesCell addSubview: _protectSystemFilesSwitch];
+	_closeAppCell = [[UIPreferencesTableCell alloc] init];
+	[_closeAppCell setTitle: @"Close Finder Completely"];
+	_closeAppButton = [[UINavBarButton alloc] initWithFrame: buttonRect];
+	[_closeAppButton setAutosizesToFit: FALSE];
+	[_closeAppButton setNavBarButtonStyle: 0];
+	[_closeAppButton setTitle: @"Close"];
+	[_closeAppButton addTarget: _app action: @selector(terminateWithSuccess) forEvents: 1];
+	[_closeAppCell addSubview: _closeAppButton];
 	
 	//Setup appearance group
 	_appearenceGroup = [[UIPreferencesTableCell alloc] init];
 	[_appearenceGroup setTitle: @"Appearance"];
-	[_appearenceGroup setIcon: [UIImage applicationImageNamed: @"Finder_32x32.png"]];	
+	[_appearenceGroup setIcon: [UIImage applicationImageNamed: @"Finder_32x32.png"]];
+		
 	_browserRowHeightCell = [[UIPreferencesTableCell alloc] init];
 	[_browserRowHeightCell setTitle: @"Row Size"];
 	_browserRowHeightSlider = [[UISliderControl alloc] initWithFrame: sliderRect];
 	[_browserRowHeightSlider setMinValue: 20];
 	[_browserRowHeightSlider setMaxValue: 128];
 	[_browserRowHeightSlider setShowValue: TRUE];
-	[_browserRowHeightCell addSubview: _browserRowHeightSlider];	
+	[_browserRowHeightCell addSubview: _browserRowHeightSlider];
+		
+	_buttonStylesCell = [[UIPreferencesTableCell alloc] init];
+	[_buttonStylesCell setTitle: @"Button Style"];
+	_buttonStyleBlueButton = [[UINavBarButton alloc] initWithFrame: 
+		CGRectMake(buttonRect.origin.x - buttonRect.size.width - buttonBuffer, buttonRect.origin.y, buttonRect.size.width, buttonRect.size.height)];
+	[_buttonStyleBlueButton setAutosizesToFit: FALSE];
+	[_buttonStyleBlueButton setNavBarButtonStyle: 3];
+	[_buttonStyleBlueButton setTitle: @"Blue"];
+	[_buttonStyleBlueButton addTarget: self action: @selector(setButtonStyleBlue) forEvents: 1];
+	[_buttonStylesCell addSubview: _buttonStyleBlueButton];
+	_buttonStyleRedButton = [[UINavBarButton alloc] initWithFrame: buttonRect];
+	[_buttonStyleRedButton setAutosizesToFit: FALSE];
+	[_buttonStyleRedButton setNavBarButtonStyle: 1];
+	[_buttonStyleRedButton setTitle: @"Red"];
+	[_buttonStyleRedButton addTarget: self action: @selector(setButtonStyleRed) forEvents: 1];
+	[_buttonStylesCell addSubview: _buttonStyleRedButton];
+		
+	_barStylesCell = [[UIPreferencesTableCell alloc] init];
+	[_barStylesCell setTitle: @"Bar Style"];
+	_barStyleBlueButton = [[UINavBarButton alloc] initWithFrame: 
+		CGRectMake(buttonRect.origin.x - buttonRect.size.width - buttonBuffer, buttonRect.origin.y, buttonRect.size.width, buttonRect.size.height)];
+	[_barStyleBlueButton setAutosizesToFit: FALSE];
+	[_barStyleBlueButton setNavBarButtonStyle: 0];
+	[_barStyleBlueButton setTitle: @"Blue"];
+	[_barStyleBlueButton addTarget: self action: @selector(setBarStyleBlue) forEvents: 1];
+	[_barStylesCell addSubview: _barStyleBlueButton];
+	_barStyleBlackButton = [[UINavBarButton alloc] initWithFrame: buttonRect];
+	[_barStyleBlackButton setAutosizesToFit: FALSE];
+	[_barStyleBlackButton setNavBarButtonStyle: 0];
+	[_barStyleBlackButton setTitle: @"Black"];
+	[_barStyleBlackButton addTarget: self action: @selector(setBarStyleBlack) forEvents: 1];
+	[_barStylesCell addSubview: _barStyleBlackButton];
 	
 	//Setup file associations group
 	_associationsGroup = [[UIPreferencesTableCell alloc] init];
@@ -118,25 +167,35 @@
 
 - (void) dealloc
 {	
+	[_app release];
+	
 	[_filesystemGroup release];
 	[_startupInLastPathCell release];
 	[_startupDirCell release];
 	[_showHiddenFilesCell release];
 	[_launchApplicationsCell release];
 	[_protectSystemFilesCell release];	
+	[_closeAppCell release];
 	
 	[_associationsGroup release];
 	[_associationsCells release];
 	
 	[_appearenceGroup release];
 	[_browserRowHeightCell release];	
+	[_buttonStylesCell release];
+	[_barStylesCell release];
 	
 	[_startupInLastPathSwitch release];
 	[_showHiddenFilesSwitch release];
 	[_launchApplicationsSwitch release];
 	[_launchExecutablesSwitch release];
 	[_protectSystemFilesSwitch release];
+	[_closeAppButton release];
 	[_browserRowHeightSlider release];
+	[_buttonStyleBlueButton release];
+	[_buttonStyleRedButton release];
+	[_barStyleBlueButton release];
+	[_barStyleBlackButton release];
 		
 	[_applicationStartupPaths release];
 	
@@ -195,6 +254,26 @@
 	memcpy(&finalValue, &value, sizeof(long));
 	
 	return finalValue;
+}
+
+- (int) buttonInactiveStyle
+{
+	return _buttonInactiveStyle;
+}
+
+- (int) buttonActiveStyle
+{
+	return _buttonActiveStyle;
+}
+
+- (int) buttonBackStyle
+{
+	return _buttonBackStyle;
+}
+
+- (int) barStyle
+{
+	return _barStyle;
 }
 
 - (NSArray*) fileTypeAssociations
@@ -270,6 +349,48 @@
 	[_browserRowHeightSlider setValue: (float)value];
 }
 
+- (void) setButtonInactiveStyle: (int)style
+{
+	_buttonInactiveStyle = style;
+	[_app applyStyles];
+}
+- (void) setButtonActiveStyle: (int)style
+{
+	_buttonActiveStyle = style;
+	[_app applyStyles];
+}
+- (void) setButtonBackStyle: (int)style
+{
+	_buttonBackStyle = style;
+	[_app applyStyles];
+}
+- (void) setButtonStyleBlue 
+{ 
+	[self setButtonInactiveStyle: 0]; 
+	[self setButtonActiveStyle: 3];
+	[self setButtonBackStyle: 2];
+}
+- (void) setButtonStyleRed 
+{ 
+	[self setButtonInactiveStyle: 0]; 
+	[self setButtonActiveStyle: 1];
+	[self setButtonBackStyle: 2];
+}
+
+- (void) setBarStyle: (int)style
+{
+	_barStyle = style;
+	[_app applyStyles];
+}
+- (void) setBarStyleBlue 
+{ 
+	[self setBarStyle: 0]; 
+}
+- (void) setBarStyleBlack 
+{ 
+	[self setBarStyle: 1]; 
+}
+
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations
 {
 	//Ensure we have a clean filetype cell array
@@ -303,7 +424,9 @@
 	[self setLaunchApplications: TRUE];
 	[self setLaunchExecutables: FALSE];
 	[self setProtectSystemFiles: TRUE];
-	[self setBrowserRowHeight: 64];	
+	[self setBrowserRowHeight: 48];
+	[self setButtonStyleRed];
+	[self setBarStyleBlack];	
 	
 	//Ensure we have a clean application startup array
 	[_applicationStartupPaths release];
@@ -323,36 +446,52 @@
 			{
 				[self setStartupPath: [settingsDict valueForKey: currKey]];
 			}
-			if ([currKey isEqualToString: @"MFApplicationStartupPaths"])
+			else if ([currKey isEqualToString: @"MFApplicationStartupPaths"])
 			{
 				NSDictionary* applicationStartupPaths = [settingsDict objectForKey: currKey];
 				[_applicationStartupPaths setDictionary: applicationStartupPaths];
 			}
-			if ([currKey isEqualToString: @"MFStartupInLastPath"])
+			else if ([currKey isEqualToString: @"MFStartupInLastPath"])
 			{
 				[self setStartupInLastPath: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
-			if ([currKey isEqualToString: @"MFShowHiddenFiles"])
+			else if ([currKey isEqualToString: @"MFShowHiddenFiles"])
 			{
 				[self setShowHiddenFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
-			if ([currKey isEqualToString: @"MFLaunchApplications"])
+			else if ([currKey isEqualToString: @"MFLaunchApplications"])
 			{
 				[self setLaunchApplications: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
-			if ([currKey isEqualToString: @"MFLaunchExecutables"])
+			else if ([currKey isEqualToString: @"MFLaunchExecutables"])
 			{
 				[self setLaunchExecutables: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
-			if ([currKey isEqualToString: @"MFProtectSystemFiles"])
+			else if ([currKey isEqualToString: @"MFProtectSystemFiles"])
 			{
 				[self setProtectSystemFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
-			if ([currKey isEqualToString: @"MFBrowserRowHeight"])
+			else if ([currKey isEqualToString: @"MFBrowserRowHeight"])
 			{
 				[self setBrowserRowHeight: [[settingsDict valueForKey: currKey] intValue]];
 			}
-			if ([currKey isEqualToString: @"MFFileTypeAssociations"])
+			else if ([currKey isEqualToString: @"MFButtonInactiveStyle"])
+			{
+				[self setButtonInactiveStyle: [[settingsDict valueForKey: currKey] intValue]];
+			}
+			else if ([currKey isEqualToString: @"MFButtonActiveStyle"])
+			{
+				[self setButtonActiveStyle: [[settingsDict valueForKey: currKey] intValue]];
+			}
+			else if ([currKey isEqualToString: @"MFButtonBackStyle"])
+			{
+				[self setButtonBackStyle: [[settingsDict valueForKey: currKey] intValue]];
+			}
+			else if ([currKey isEqualToString: @"MFBarStyle"])
+			{
+				[self setBarStyle: [[settingsDict valueForKey: currKey] intValue]];
+			}		
+			else if ([currKey isEqualToString: @"MFFileTypeAssociations"])
 			{
 				//Get filetype associations and create cells for them, inserting behind the empty cell
 				NSArray* fileTypeAssociations = [settingsDict objectForKey: currKey];
@@ -408,6 +547,10 @@
 	NSString* launchExecutablesValue = [self launchExecutables] == FALSE ? @"0" : @"1";
 	NSString* protectSystemFilesValue = [self protectSystemFiles] == FALSE ? @"0" : @"1";
 	NSString* browserRowHeight = [[NSNumber numberWithInt: [self browserRowHeight]] stringValue];
+	NSString* buttonInactiveStyle = [[NSNumber numberWithInt: [self buttonInactiveStyle]] stringValue];
+	NSString* buttonActiveStyle = [[NSNumber numberWithInt: [self buttonActiveStyle]] stringValue];
+	NSString* buttonBackStyle = [[NSNumber numberWithInt: [self buttonBackStyle]] stringValue];
+	NSString* barStyle = [[NSNumber numberWithInt: [self barStyle]] stringValue];
 	NSArray* fileTypeAssociations = [self fileTypeAssociations];
 	NSDictionary* applicationStartupPaths = _applicationStartupPaths;
 	
@@ -421,6 +564,10 @@
 		launchExecutablesValue, @"MFLaunchExecutables",
 		protectSystemFilesValue, @"MFProtectSystemFiles",
 		browserRowHeight, @"MFBrowserRowHeight",
+		buttonInactiveStyle, @"MFButtonInactiveStyle",
+		buttonActiveStyle, @"MFButtonActiveStyle",
+		buttonBackStyle, @"MFButtonBackStyle",
+		barStyle, @"MFBarStyle",
 		fileTypeAssociations, @"MFFileTypeAssociations",
 		nil];
 	
@@ -445,9 +592,9 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 6;		
+		case 1: return 7;		
 		case 2: return 0;
-		case 3: return 1;
+		case 3: return 3;
 		case 4: return 0;
 		case 5: return [_associationsCells count];
 		default: return 0;
@@ -516,12 +663,15 @@
 				case 3: return _launchApplicationsCell;
 				case 4: return _launchExecutablesCell;
 				case 5: return _protectSystemFilesCell;
+				case 6: return _closeAppCell;
 			}
 		case 2: return _appearenceGroup;
 		case 3:
 			switch (row)
 			{
 				case 0:	return _browserRowHeightCell;
+				case 1:	return _buttonStylesCell;
+				case 2:	return _barStylesCell;
 			}
 		case 4: return _associationsGroup;
 		case 5: return [_associationsCells objectAtIndex: row];		

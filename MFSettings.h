@@ -35,9 +35,14 @@
 #import <UIKit/UIPreferencesTableCell.h>
 #import <UIKit/UIPreferencesTextTableCell.h>
 #import <UIKit/UISwitchControl.h>
+#import <UIKit/UINavBarButton.h>
+
+@class MFApp;
 
 @interface MFSettings : UIView
 {
+	MFApp* _app;
+	
 	UIPreferencesTable* _prefsTable;
 	
 	UIPreferencesTableCell* _filesystemGroup;
@@ -47,9 +52,12 @@
 	UIPreferencesTableCell* _launchApplicationsCell;
 	UIPreferencesTableCell* _launchExecutablesCell;
 	UIPreferencesTableCell* _protectSystemFilesCell;
+	UIPreferencesTableCell* _closeAppCell;
 	
 	UIPreferencesTableCell* _appearenceGroup;
 	UIPreferencesTableCell* _browserRowHeightCell;	
+	UIPreferencesTableCell* _buttonStylesCell;	
+	UIPreferencesTableCell* _barStylesCell;
 	
 	UIPreferencesTableCell* _associationsGroup;
 	NSMutableArray* _associationsCells;
@@ -60,13 +68,22 @@
 	UISwitchControl* _launchExecutablesSwitch;
 	UISwitchControl* _protectSystemFilesSwitch;
 	UISliderControl* _browserRowHeightSlider;
+	UINavBarButton* _closeAppButton;
+	UINavBarButton* _buttonStyleBlueButton;
+	UINavBarButton* _buttonStyleRedButton;
+	UINavBarButton* _barStyleBlueButton;
+	UINavBarButton* _barStyleBlackButton;
 	
 	NSMutableDictionary* _applicationStartupPaths;
+	int _buttonInactiveStyle;
+	int _buttonActiveStyle;
+	int _buttonBackStyle;
+	int _barStyle;
 	
 	NSString* _settingsPath;
 	id _delegate;
 }
-- (id) initWithFrame: (struct CGRect)rect withSettingsPath: (NSString*)settingsPath;
+- (id) initWithFrame: (struct CGRect)rect withSettingsPath: (NSString*)settingsPath withMFApp: (MFApp*)app;
 - (void) dealloc;
 - (id) delegate;
 - (NSString*) startupPath;
@@ -76,6 +93,10 @@
 - (BOOL) launchExecutables;
 - (BOOL) protectSystemFiles;
 - (int) browserRowHeight;
+- (int) buttonInactiveStyle;
+- (int) buttonActiveStyle;
+- (int) buttonBackStyle;
+- (int) barStyle;
 - (NSArray*) fileTypeAssociations;
 - (NSString*) startupPathForApplication: (NSString*)appID;
 - (void) setDelegate: (id)delegate;
@@ -86,6 +107,14 @@
 - (void) setLaunchExecutables: (BOOL)launchExecutables;
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
 - (void) setBrowserRowHeight: (int)value;
+- (void) setButtonInactiveStyle: (int)style;
+- (void) setButtonActiveStyle: (int)style;
+- (void) setButtonBackStyle: (int)style;
+- (void) setButtonStyleBlue;
+- (void) setButtonStyleRed;
+- (void) setBarStyle: (int)style;
+- (void) setBarStyleBlue;
+- (void) setBarStyleBlack;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) setStartupPath: (NSString*)path forApplication: (NSString*)appID;
 - (void) readSettings;
