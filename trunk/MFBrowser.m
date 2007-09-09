@@ -752,4 +752,42 @@
 	_lastSelectedPath = [[NSString alloc] initWithString: selectedAbsolutePath];
 }
 
+/*
+- (IBAction)sendHTTPPost:(id)sender {
+	
+	//creating the url request:
+	NSURL *cgiUrl = [NSURL URLWithString:@"http://www.myserver.com/webToEmail.cgi"];
+	NSMutableURLRequest *postRequest = [NSMutableURLRequest requestWithURL:cgiUrl];
+	
+	//adding header information:
+	[postRequest setHTTPMethod:@"POST"];
+	
+	NSString *stringBoundary = [NSString stringWithString:@"0xKhTmLbOuNdArY"];
+	NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@",stringBoundary];
+	[postRequest addValue:contentType forHTTPHeaderField: @"Content-Type"];
+	
+	
+	//setting up the body:
+	NSMutableData *postBody = [NSMutableData data];
+	[postBody appendData:[[NSString stringWithFormat:@"--%@\r\n",stringBoundary] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithString:@"Content-Disposition: form-data; name=\"realname\"\r\n\r\n"] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithString:@"Joe Doe"] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n",stringBoundary] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithString:@"Content-Disposition: form-data; name=\"email\"\r\n\r\n"] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithString:@"joe.doe@company.biz"] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n",stringBoundary] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithString:@"Content-Disposition: form-data; name=\"uploadFile\"; filename=\"test.txt\"\r\n"] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[[NSString stringWithString:@"Content-Type: application/octet-stream\r\n\r\n"] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postBody appendData:[NSData dataWithContentsOfFile:@"/test.txt"]];
+	[postBody appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n",stringBoundary] dataUsingEncoding:NSUTF8StringEncoding]];
+	[postRequest setHTTPBody:postBody];
+	
+	//sending the request via the 'htmlView' WebView:
+        [[htmlView mainFrame] loadRequest:postRequest];
+}
+
+//Also note
+[postRequest setHTTPBodyStream:[NSInputStream inputStreamWithFileAtPath:filePath]];
+*/
+
 @end
