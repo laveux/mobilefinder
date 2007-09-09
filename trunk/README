@@ -7,6 +7,7 @@ Thanks: iPhone Dev Team
 Compilation Toolchain and Hello World Applicaiton
 
 Thanks: jasonsmith for the icon.
+Thanks: rSBT.app dev team for unknown application icon.
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -23,7 +24,7 @@ Thanks: jasonsmith for the icon.
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 Install Instructions:
-1. Jailbreak iPhone and install ssh/sftp (see http://iphone.fiveforty.net/wiki/index.php/How_to_Escape_Jail)
+1. Jailbreak iPhone and install /bin/cp, /bin/mv, and ssh/sftp (see http://iphone.fiveforty.net/wiki/index.php/How_to_Escape_Jail)
 2. Put Finder.app into /Applications on your iPhone using an sftp program (Cyberduck)
 3. Reboot your iPhone
 

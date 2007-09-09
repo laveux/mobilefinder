@@ -97,6 +97,7 @@
 - (void) changeDirectoryToHome;
 - (void) changeDirectoryToApplications;
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
+- (NSString*) quoteString: (NSString*)string;
 - (void) makeDirectoryAtPath: (NSString*)path;
 - (void) makeFileAtPath: (NSString*)path;
 - (void) deletePath:(NSString*) path;

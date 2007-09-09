@@ -70,7 +70,7 @@
 	_fileTypeAssociations = nil;
 	_mandatoryLaunchApplication = nil;
 	//TODO: Variable image sizes fully implemented
-	_rowHeight = 64.0f;
+	_rowHeight = 48.0f;
 	_rowHeightBuffer = 2.0f;
 	
 	//Initialize state variables
@@ -387,7 +387,7 @@
 					appID = [plistDict valueForKey: key];
 					break;
 				}
-			}				
+			}
 				
 			//Launch application by the regular method
 			if (appID != nil)
@@ -615,14 +615,14 @@
 		//operationSuccess = [_fileManager movePath: srcPath toPath: dstPath handler: nil];
 		//[[NSFileManager defaultManager] movePath: @"/Test" toPath: @"/System/Test" handler: nil];
 		
-		//HACK: Above statements crash program.  Use system call to move file
+		//HACK: It seems that Apple removed the NSFileManager movePath:toPath:handler selector. Use system command.
 		//TODO: Shell characters in path mess up command
-		NSString* moveCommand = [[[[[[NSString string]
-			stringByAppendingString: @"/bin/mv \'"] 
-			stringByAppendingString: absoluteSrcPath]
-			stringByAppendingString: @"\' \'"]
-			stringByAppendingString: absoluteDstPath]
-			stringByAppendingString: @"\'"];
+		
+		NSString* moveCommand = [[[[[NSString string]
+			stringByAppendingString: @"/bin/mv "] 
+			stringByAppendingString: [self quoteString: absoluteSrcPath]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [self quoteString: absoluteDstPath]];
 		NSLog(@"%@", moveCommand);
 		system([moveCommand UTF8String]);
 		usleep(10);	
@@ -631,20 +631,35 @@
 	{
 		//operationSuccess = [_fileManager copyPath: srcPath toPath: dstPath handler: nil];
 		
-		//HACK: Above statement crashes program.  Use system call to copy file
+		//HACK: It seems that Apple removed the NSFileManager copyPath:toPath:handler selector. Use system command.
 		//TODO: Shell characters in path mess up command
-		NSString* copyCommand = [[[[[[NSString string]
-			stringByAppendingString: @"/bin/cp -R \'"] 
-			stringByAppendingString: absoluteSrcPath]
-			stringByAppendingString: @"\' \'"]
-			stringByAppendingString: absoluteDstPath]
-			stringByAppendingString: @"\'"];
+		NSString* copyCommand = [[[[[NSString string]
+			stringByAppendingString: @"/bin/cp -R "] 
+			stringByAppendingString: [self quoteString: absoluteSrcPath]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [self quoteString: absoluteDstPath]];
 		NSLog(@"%@", copyCommand);
 		system([copyCommand UTF8String]);
-		usleep(10);	
+		usleep(10);
 	}
 	
 	[self refreshFileView];
+}
+
+- (NSString*) quoteString: (NSString*)string
+{
+	NSMutableString* safeSrcPath = [[NSMutableString alloc] initWithCapacity: 1024];
+	[safeSrcPath setString: string];
+		
+	[safeSrcPath replaceOccurrencesOfString: @"'"
+		withString: @"'\\''" 
+		options: NSLiteralSearch 
+		range: NSMakeRange(0, [safeSrcPath length])];
+		
+	[safeSrcPath insertString: @"'" atIndex: 0];
+	[safeSrcPath insertString: @"'" atIndex: [safeSrcPath length]];	
+		
+	return [safeSrcPath autorelease];
 }
 
 - (void) makeDirectoryAtPath: (NSString*)path

@@ -64,6 +64,22 @@ typedef struct __GSEvent
 	//Set applicationID
 	_applicationID = [@"com.googlecode.MobileFinder" copy];
 	
+	//Set private global data
+	_appLibraryPath = [[self userLibraryDirectory] 
+		stringByAppendingPathComponent: @"MobileFinder"];
+	[_appLibraryPath retain];
+	_trashPath = [_appLibraryPath 
+		stringByAppendingPathComponent: @"Trash"];
+	[_trashPath retain];
+	_settingsPath = [[_appLibraryPath 
+		stringByAppendingPathComponent: _applicationID]
+		stringByAppendingPathExtension: @"plist"];
+	[_settingsPath retain];
+	
+	//Ensure library directories exsist
+	[[NSFileManager defaultManager] createDirectoryAtPath: _appLibraryPath attributes: nil];
+	[[NSFileManager defaultManager] createDirectoryAtPath: _trashPath attributes: nil];
+	
 	//Setup main view
     struct CGRect screenRect = [UIHardware fullScreenApplicationContentRect];
     screenRect.origin.x = 0.0;
@@ -73,113 +89,18 @@ typedef struct __GSEvent
 	//Control sizes
 	float navBarWidth = screenRect.size.width;
 	float navBarHeight = 74.0f;
-	float navBarButtonHeight = 32.0f;
-	float navBarSouthBuffer = 5.0f;
-	float navBarButtonBuffer = 4.0f;
-	float finderButtonWidth = 80.0f;
-	float settingsButtonWidth = 80.0f;
 	float fileOpBarWidth = screenRect.size.width;
 	float fileOpBarHeight = 46.0f;
-	float fileOpBarNorthBuffer = 8.0f;
-	float fileOpBarButtonHeight = 32.0f;
-	float fileOpBarButtonBuffer = 2.0f;
-	float fileOpBarButtonGroupBuffer = 4.0f;
-	float moveButtonWidth = 60.0f;
-	float copyButtonWidth = 60.0f;
-	float deleteButtonWidth = 60.0f;
-	float renameButtonWidth = 60.0f;
-	float newButtonWidth = 60.0f;
 		
 	//Setup the settings pane (and load settings)
-	NSString* settingsPath = [[[[self userLibraryDirectory] 
-		stringByAppendingPathComponent: @"Preferences"]
-		stringByAppendingPathComponent: _applicationID]
-		stringByAppendingPathExtension: @"plist"];
 	_settings = [[MFSettings alloc] initWithFrame: CGRectMake(
-		0.0f, 
-		navBarHeight, 
-		screenRect.size.width, screenRect.size.height - navBarHeight)
-		withSettingsPath: settingsPath];
-	[_settings setDelegate: self];
+			0.0f, 
+			navBarHeight, 
+			screenRect.size.width, screenRect.size.height - navBarHeight)
+		withSettingsPath: _settingsPath
+		withMFApp: self];
+	[_settings setDelegate: self];	
 	
-	//Setup navigation bar
-	_navBar = [[UINavigationBar alloc] initWithFrame: CGRectMake(0.0f, 0.0f, navBarWidth, navBarHeight)];
-	[_navBar showButtonsWithLeftTitle: @"Back" rightTitle: @"Home" leftBack: TRUE];
-    [_navBar setBarStyle: 3];
-	[_navBar setDelegate: self];
-	[_mainView addSubview: _navBar];
-	
-	//Setup navigation bar buttons
-	_finderButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		navBarWidth / 2.0f - finderButtonWidth - navBarButtonBuffer / 2.0f,
-		navBarHeight - navBarButtonHeight - navBarSouthBuffer, 
-		finderButtonWidth, navBarButtonHeight)];
-	[_finderButton setAutosizesToFit: FALSE];
-	[_finderButton setTitle: @"Finder"];
-	[_finderButton addTarget: self action: @selector(makeBrowserActive) forEvents: 1];
-	[_navBar addSubview: _finderButton];
-	
-	_settingsButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		navBarWidth / 2.0f + navBarButtonBuffer / 2.0f,
-		navBarHeight - navBarButtonHeight - navBarSouthBuffer, 
-		settingsButtonWidth, navBarButtonHeight)];
-	[_settingsButton setAutosizesToFit: FALSE];
-	[_settingsButton setTitle: @"Settings"];
-	[_settingsButton addTarget: self action: @selector(makeSettingsActive) forEvents: 1];
-	[_navBar addSubview: _settingsButton];		
-	
-	//Setup file operations bar
-	_fileOpBar = [[UIGradientBar alloc] initWithFrame: CGRectMake(
-		0.0f, 
-		screenRect.size.height - fileOpBarHeight,
-		fileOpBarWidth, fileOpBarHeight)];
-		
-	//Setup file operation buttons
-	_copyButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - copyButtonWidth - fileOpBarButtonBuffer * 2.0 - fileOpBarButtonGroupBuffer,
-		fileOpBarNorthBuffer, 
-		copyButtonWidth, fileOpBarButtonHeight)];
-	[_copyButton setAutosizesToFit: FALSE];
-	[_copyButton addTarget: self action: @selector(copyButtonPressed) forEvents: 1];
-	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _copyButton];
-	
-	_moveButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - fileOpBarButtonBuffer * 1.0 - fileOpBarButtonGroupBuffer, 
-		fileOpBarNorthBuffer, 
-		moveButtonWidth, fileOpBarButtonHeight)];
-	[_moveButton setAutosizesToFit: FALSE];
-	[_moveButton addTarget: self action: @selector(moveButtonPressed) forEvents: 1];	
-	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _moveButton];
-	
-	_deleteButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f - deleteButtonWidth / 2.0, 
-		fileOpBarNorthBuffer, 
-		deleteButtonWidth, fileOpBarButtonHeight)];
-	[_deleteButton setAutosizesToFit: FALSE];
-	[_deleteButton addTarget: self action: @selector(deleteButtonPressed) forEvents: 1];	
-	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _deleteButton];
-	
-	_renameButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f + deleteButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0 + fileOpBarButtonGroupBuffer, 
-		fileOpBarNorthBuffer, 
-		renameButtonWidth, fileOpBarButtonHeight)];
-	[_renameButton setAutosizesToFit: FALSE];
-	[_renameButton addTarget: self action: @selector(renameButtonPressed) forEvents: 1];	
-	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _renameButton];
-	
-	_newButton = [[UINavBarButton alloc] initWithFrame: CGRectMake(
-		fileOpBarWidth / 2.0f + deleteButtonWidth / 2.0f + renameButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
-		fileOpBarNorthBuffer, 
-		newButtonWidth, fileOpBarButtonHeight)];
-	[_newButton setAutosizesToFit: FALSE];
-	[_newButton addTarget: self action: @selector(newButtonPressed) forEvents: 1];	
-	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _newButton];
-		
 	//Setup the file browser
 	_browser = [[MFBrowser alloc] initWithApplication: self 
 		withAppID: _applicationID
@@ -188,6 +109,11 @@ typedef struct __GSEvent
 			navBarHeight, 
 			screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
 	[_browser setDelegate: self];
+	
+	//Setup navigation bars
+	_navBarFrame = CGRectMake(0.0, 0.0, navBarWidth, navBarHeight);
+	_fileOpBarFrame = CGRectMake(0.0f, screenRect.size.height - fileOpBarHeight, fileOpBarWidth, fileOpBarHeight);
+	[self applyStyles];
 	
 	//Make the browser active at start
 	[self makeSettingsActive];
@@ -205,8 +131,10 @@ typedef struct __GSEvent
 	[_browser release];
 	[_settings release];
 	[_navBar release];
+	[_backButton release];
 	[_finderButton release];
 	[_settingsButton release];
+	[_homeButton release];
 	[_fileOpBar release];
 	[_moveButton release];
 	[_copyButton release];
@@ -217,6 +145,9 @@ typedef struct __GSEvent
 	//Release private data
 	[_applicationID release];
 	[_launchingApplicationID release];
+	[_appLibraryPath release];
+	[_settingsPath release];
+	[_trashPath release];
 	[_pathSelectedForFileOp release];
 	
 	[super dealloc];
@@ -305,21 +236,201 @@ typedef struct __GSEvent
 	}
 }
 
+- (void) createNavigationBar
+{
+	//Control sizes
+	float navBarButtonHeight = 32.0f;
+	float navBarSouthBuffer = 5.0f;
+	float navBarSideButtonBuffer = 4.0f;
+	float navBarButtonBuffer = 4.0f;
+	float backButtonWidth = 52.0f;
+	float trashButtonWidth = 32.0f;
+	float homeButtonWidth = 32.0f;
+	float finderButtonWidth = 68.0f;
+	float settingsButtonWidth = 68.0f;
+	
+	//Setup navigation bar
+	[_navBar release];
+	_navBar = [[UINavigationBar alloc] initWithFrame: _navBarFrame];
+	[_navBar setBarStyle: [_settings barStyle]];
+	[_navBar setDelegate: self];
+	
+	//Setup navigation bar buttons
+	_backButton = [_navBar createButtonWithContents: @"Back" 
+		width: backButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonBackStyle] 
+		isRight: FALSE];
+	[_backButton setFrame: CGRectMake(
+		navBarSideButtonBuffer,
+		_navBarFrame.size.height - navBarButtonHeight - navBarSouthBuffer, 
+		backButtonWidth, navBarButtonHeight)];
+	[_backButton addTarget: self action: @selector(backButtonPressed) forEvents: 1];
+	[_navBar addSubview: _backButton];
+	
+	_finderButton = [_navBar createButtonWithContents: @"Finder" 
+		width: finderButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_finderButton setFrame: CGRectMake(
+		_navBarFrame.size.width / 2.0f - finderButtonWidth - navBarButtonBuffer / 2.0f,
+		_navBarFrame.size.height - navBarButtonHeight - navBarSouthBuffer, 
+		finderButtonWidth, navBarButtonHeight)];
+	[_finderButton addTarget: self action: @selector(makeBrowserActive) forEvents: 1];
+	[_navBar addSubview: _finderButton];
+	
+	_settingsButton = [_navBar createButtonWithContents: @"Settings" 
+		width: settingsButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_settingsButton setFrame: CGRectMake(
+		_navBarFrame.size.width / 2.0f + navBarButtonBuffer / 2.0f,
+		_navBarFrame.size.height - navBarButtonHeight - navBarSouthBuffer, 
+		settingsButtonWidth, navBarButtonHeight)];
+	[_settingsButton addTarget: self action: @selector(makeSettingsActive) forEvents: 1];
+	[_navBar addSubview: _settingsButton];	
+	
+	_trashButton = [_navBar createButtonWithContents: [NSString stringWithUTF8String: "\uf8ff"]
+		width: trashButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_trashButton setFrame: CGRectMake(
+		_navBarFrame.size.width - homeButtonWidth - navBarButtonBuffer - trashButtonWidth - navBarSideButtonBuffer,
+		_navBarFrame.size.height - navBarButtonHeight - navBarSouthBuffer, 
+		trashButtonWidth, navBarButtonHeight)];
+	[_trashButton addTarget: self action: @selector(trashButtonPressed) forEvents: 1];
+	[_navBar addSubview: _trashButton];
+	
+	_homeButton = [_navBar createButtonWithContents: @"~" 
+		width: homeButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_homeButton setFrame: CGRectMake(
+		_navBarFrame.size.width - homeButtonWidth - navBarSideButtonBuffer,
+		_navBarFrame.size.height - navBarButtonHeight - navBarSouthBuffer, 
+		homeButtonWidth, navBarButtonHeight)];
+	[_homeButton addTarget: self action: @selector(homeButtonPressed) forEvents: 1];
+	[_navBar addSubview: _homeButton];
+	
+	//Add nav bar to view
+	[_mainView addSubview: _navBar];
+}
+
+- (void) createFileOpBar
+{
+	//Control sizes
+	float fileOpBarNorthBuffer = 8.0f;
+	float fileOpBarButtonHeight = 32.0f;
+	float fileOpBarButtonBuffer = 2.0f;
+	float fileOpBarButtonGroupBuffer = 4.0f;
+	float moveButtonWidth = 60.0f;
+	float copyButtonWidth = 60.0f;
+	float deleteButtonWidth = 60.0f;
+	float renameButtonWidth = 60.0f;
+	float newButtonWidth = 60.0f;
+	
+	//Setup file operations bar
+	[_fileOpBar release];
+	_fileOpBar = [[UINavigationBar alloc] initWithFrame: _fileOpBarFrame];
+	[_fileOpBar setBarStyle: [_settings barStyle]];
+		
+	//Setup file operation buttons
+	_copyButton = [_fileOpBar createButtonWithContents: @"Copy" 
+		width: copyButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_copyButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - copyButtonWidth - fileOpBarButtonBuffer * 2.0 - fileOpBarButtonGroupBuffer,
+		fileOpBarNorthBuffer, 
+		copyButtonWidth, fileOpBarButtonHeight)];
+	[_newButton setAutosizesToFit: FALSE];
+	[_copyButton addTarget: self action: @selector(copyButtonPressed) forEvents: 1];
+	[self resetFileOpButtons];
+	[_fileOpBar addSubview: _copyButton];
+	
+	_moveButton = [_fileOpBar createButtonWithContents: @"Move" 
+		width: copyButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_moveButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - fileOpBarButtonBuffer * 1.0 - fileOpBarButtonGroupBuffer, 
+		fileOpBarNorthBuffer, 
+		moveButtonWidth, fileOpBarButtonHeight)];
+	[_moveButton setAutosizesToFit: FALSE];
+	[_moveButton addTarget: self action: @selector(moveButtonPressed) forEvents: 1];	
+	[self resetFileOpButtons];
+	[_fileOpBar addSubview: _moveButton];
+	
+	_deleteButton = [_fileOpBar createButtonWithContents: @"Delete" 
+		width: copyButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_deleteButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f - deleteButtonWidth / 2.0, 
+		fileOpBarNorthBuffer, 
+		deleteButtonWidth, fileOpBarButtonHeight)];
+	[_deleteButton setAutosizesToFit: FALSE];
+	[_deleteButton addTarget: self action: @selector(deleteButtonPressed) forEvents: 1];	
+	[self resetFileOpButtons];
+	[_fileOpBar addSubview: _deleteButton];
+	
+	_renameButton = [_fileOpBar createButtonWithContents: @"Name" 
+		width: copyButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_renameButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0 + fileOpBarButtonGroupBuffer, 
+		fileOpBarNorthBuffer, 
+		renameButtonWidth, fileOpBarButtonHeight)];
+	[_renameButton setAutosizesToFit: FALSE];
+	[_renameButton addTarget: self action: @selector(renameButtonPressed) forEvents: 1];	
+	[self resetFileOpButtons];
+	[_fileOpBar addSubview: _renameButton];
+	
+	_newButton = [_fileOpBar createButtonWithContents: @"New" 
+		width: copyButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_newButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + renameButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
+		fileOpBarNorthBuffer, 
+		newButtonWidth, fileOpBarButtonHeight)];
+	[_newButton setAutosizesToFit: FALSE];
+	[_newButton addTarget: self action: @selector(newButtonPressed) forEvents: 1];	
+	[self resetFileOpButtons];
+	[_fileOpBar addSubview: _newButton];
+	
+	[_mainView addSubview: _fileOpBar];
+}
+
+- (void) backButtonPressed
+{
+	[_browser changeDirectoryToLast];
+}
+
+- (void) trashButtonPressed
+{
+	[_browser openPath: _trashPath];
+}
+
+- (void) homeButtonPressed
+{
+	[_browser changeDirectoryToHome];
+}
+
 - (void) makeBrowserActive
 {
 	if ([_mainView containsView: _browser])
 		return;
-	
-	//Enable navBar buttons
-	[_navBar setButton: 0 enabled: TRUE];
-	[_navBar setButton:	1 enabled: TRUE];
-	
-	//Switch views
-	[_settings removeFromSuperview];
-	[_mainView addSubview: _browser];
-	[_mainView addSubview: _fileOpBar];
-	[_finderButton setNavBarButtonStyle: 3];
-	[_settingsButton setNavBarButtonStyle: 0];
 	
 	//Update settings
 	[_settings writeSettings];
@@ -330,6 +441,11 @@ typedef struct __GSEvent
 	[_browser setFileTypeAssociations: [_settings fileTypeAssociations]];
 	//TODO: Buffer height setting or constant
 	[_browser setRowHeight: (float)[_settings browserRowHeight] bufferHeight: 4.0f];
+	
+	//Update buttons and bars
+	[_settings removeFromSuperview];
+	[_mainView addSubview: _browser];
+	[self applyStyles];	
 }
 
 - (void) makeSettingsActive
@@ -337,51 +453,99 @@ typedef struct __GSEvent
 	if ([_mainView containsView: _settings])
 		return;
 	
-	//Disable navBar buttons
-	[_navBar setButton: 0 enabled: FALSE];
-	[_navBar setButton:	1 enabled: FALSE];
-	
-	//Switch views
+	//Verify settings
 	[_settings readSettings];
-	[_browser removeFromSuperview];
-	[_fileOpBar removeFromSuperview];
-	[_mainView addSubview: _settings];
-	[_finderButton setNavBarButtonStyle: 0];
-	[_settingsButton setNavBarButtonStyle: 3];
 	
+	//Update buttons and bars
+	[_browser removeFromSuperview];
+	[_mainView addSubview: _settings];
+	[self applyStyles];
+		
 	//HACK: This should go in a more proper place
 	//[[UIKeyboard activeKeyboard] deactivate];
+}
+
+- (void) applyStyles
+{
+	//Apply bar styles by recreating them
+	BOOL inBrowserView = [_mainView containsView: _browser];
+	[self createNavigationBar];
+	[self createFileOpBar];
+	
+	//Reset bar and button settings to what they were before	
+	if (inBrowserView)
+	{
+		[_mainView addSubview: _fileOpBar];
+		
+		[_finderButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_backButton setEnabled: TRUE];
+		[_trashButton setEnabled: TRUE];
+		[_homeButton setEnabled: TRUE];	
+	}
+	else
+	{
+		[_fileOpBar removeFromSuperview];
+		
+		[_fileOpBar removeFromSuperview];
+		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_settingsButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_backButton setEnabled: FALSE];
+		[_trashButton setEnabled: FALSE];
+		[_homeButton setEnabled: FALSE];
+	}
+	
+	//Apply file operation bar button styles
+	[self resetFileOpButtons];
+}
+
+- (void) updatePrompt
+{
+	//Update nav bar prompt to reflect directory
+	NSString* prompt;
+	if (_launchingApplicationID == nil)
+		prompt = [[_browser currentDirectory] stringByAbbreviatingWithTildeInPath];
+	else
+	{
+		prompt = [[[NSString string] 
+			stringByAppendingString: @"Opening in: "]
+			stringByAppendingString: _launchingApplicationID];
+	}
+	
+	//TODO: Abbreviate prompt
+	
+	[_navBar setPrompt: prompt];
 }
 
 - (void) resetFileOpButtons
 {
 	if (_copyButton != nil)
 	{
-		[_copyButton setNavBarButtonStyle: 0];
+		[_copyButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_copyButton setTitle: @"Copy"];
 		[_copyButton setEnabled: TRUE];
 	}
 	if (_moveButton != nil)
 	{
-		[_moveButton setNavBarButtonStyle: 0];
+		[_moveButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_moveButton setTitle: @"Move"];
 		[_moveButton setEnabled: TRUE];
 	}
 	if (_deleteButton != nil)
 	{
-		[_deleteButton setNavBarButtonStyle: 0];
+		[_deleteButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_deleteButton setTitle: @"Delete"];
 		[_deleteButton setEnabled: TRUE];
 	}
 	if (_renameButton != nil)
 	{
-		[_renameButton setNavBarButtonStyle: 0];
-		[_renameButton setTitle: @"Rename"];
+		[_renameButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_renameButton setTitle: @"Name"];
 		[_renameButton setEnabled: TRUE];
 	}
 	if (_newButton != nil)
 	{
-		[_newButton setNavBarButtonStyle: 0];
+		[_newButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_newButton setTitle: @"New"];
 		[_newButton setEnabled: TRUE];
 	}
@@ -392,9 +556,9 @@ typedef struct __GSEvent
 	if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
 	{ 
 		[self resetFileOpButtons];
-		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Cancel"];
-		[_moveButton setNavBarButtonStyle: 3];
+		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_moveButton setTitle: @"Copy"];
 		[_deleteButton setEnabled: FALSE];
 		[_renameButton setEnabled: FALSE];
@@ -415,7 +579,25 @@ typedef struct __GSEvent
 	{
 		NSString* currentSelectedPath = [_browser currentSelectedPath];
 		if (currentSelectedPath != nil)
-			[_browser deletePath: currentSelectedPath];
+		{
+			if ([currentSelectedPath hasPrefix: _trashPath])
+				[_browser deletePath: currentSelectedPath];
+			else
+			{
+				//Make path for destination in trash
+				NSString* trashedPathPath = [_trashPath stringByAppendingPathComponent: [currentSelectedPath lastPathComponent]];
+				
+				//If there is already something in the trash with this name, rename destination
+				while ([[NSFileManager defaultManager] fileExistsAtPath: trashedPathPath])
+				{
+					trashedPathPath = [trashedPathPath stringByAppendingString: @"_RemoveMe"];
+				}
+				[_browser 
+					sendSrcPath: currentSelectedPath 
+					toDstPath: trashedPathPath
+					byMoving: TRUE];
+			}
+		}
 		[self resetFileOpButtons];
 	}
 	else if ([[_copyButton title] isEqualToString: @"File"])
@@ -434,9 +616,9 @@ typedef struct __GSEvent
 	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
 	{ 
 		[self resetFileOpButtons];
-		[_moveButton setNavBarButtonStyle: 3];
+		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_moveButton setTitle: @"Cancel"];
-		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Move"];
 		[_deleteButton setEnabled: FALSE];
 		[_renameButton setEnabled: FALSE];
@@ -469,10 +651,10 @@ typedef struct __GSEvent
 	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentSelectedPath] != nil)
 	{
 		[self resetFileOpButtons];
-		[_deleteButton setNavBarButtonStyle: 3];
+		[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_deleteButton setTitle: @"Cancel"];
 		[_moveButton setEnabled: FALSE];
-		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Delete"];
 		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
@@ -485,16 +667,16 @@ typedef struct __GSEvent
 
 - (void) renameButtonPressed
 {
-	if ([[_renameButton title] isEqualToString: @"Rename"] && [_browser currentSelectedPath] != nil)
+	if ([[_renameButton title] isEqualToString: @"Name"] && [_browser currentSelectedPath] != nil)
 	{
 		[self resetFileOpButtons];
 		[_moveButton setEnabled: FALSE];
 		[_copyButton setEnabled: FALSE];
 		[_deleteButton setEnabled: FALSE];
-		[_renameButton setNavBarButtonStyle: 3];
+		[_renameButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_renameButton setTitle: @"Cancel"];
-		[_newButton setNavBarButtonStyle: 3];
-		[_newButton setTitle: @"Rename"];
+		[_newButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_newButton setTitle: @"Name"];
 	}
 	else if ([[_renameButton title] isEqualToString: @"Cancel"])
 	{
@@ -512,16 +694,16 @@ typedef struct __GSEvent
 	if ([[_newButton title] isEqualToString: @"New"])
 	{
 		[self resetFileOpButtons];
-		[_moveButton setNavBarButtonStyle: 3];
+		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_moveButton setTitle: @"Folder"];
-		[_copyButton setNavBarButtonStyle: 3];
+		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"File"];
 		[_deleteButton setEnabled: FALSE];
 		[_renameButton setEnabled: FALSE];
-		[_newButton setNavBarButtonStyle: 3];
+		[_newButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_newButton setTitle: @"Cancel"];
 	}
-	else if ([[_newButton title] isEqualToString: @"Rename"])
+	else if ([[_newButton title] isEqualToString: @"Name"])
 	{
 		[_newButton setTitle: @"Done"];
 		[_browser beginRenamePath: [_browser currentSelectedPath]];
@@ -537,35 +719,9 @@ typedef struct __GSEvent
 	}
 }
 
-- (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button 
-{
-	switch (button) 
-	{
-		case 0: //Right button
-			[_browser changeDirectoryToHome];
-			break;
-		case 1:	//Left button
-			[_browser changeDirectoryToLast];
-			break;
-	}
-}
-
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
 {
-	//Update nav bar prompt to reflect directory
-	NSString* prompt;
-	if (_launchingApplicationID == nil)
-		prompt = [path stringByAbbreviatingWithTildeInPath];
-	else
-	{
-		prompt = [[[NSString string] 
-			stringByAppendingString: @"Opening in: "]
-			stringByAppendingString: _launchingApplicationID];
-	}
-	
-	//TODO: Abbreviate prompt
-	
-	[_navBar setPrompt: prompt];
+	[self updatePrompt];
 }
 
 - (void) browserCurrentHighlightedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;

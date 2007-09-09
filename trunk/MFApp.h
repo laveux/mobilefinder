@@ -39,16 +39,26 @@
 	UIView* _mainView;
 	MFBrowser* _browser;
 	MFSettings* _settings;
+	
+	CGRect _navBarFrame;
 	UINavigationBar* _navBar;
+	UINavBarButton* _backButton;
 	UINavBarButton* _finderButton;
 	UINavBarButton* _settingsButton;
-	UIGradientBar* _fileOpBar;
+	UINavBarButton* _trashButton;
+	UINavBarButton* _homeButton;
+	
+	CGRect _fileOpBarFrame;
+	UINavigationBar* _fileOpBar;
 	UINavBarButton* _moveButton;
 	UINavBarButton* _copyButton;
 	UINavBarButton* _deleteButton;
 	UINavBarButton* _renameButton;
 	UINavBarButton* _newButton;
-		
+	
+	NSString* _appLibraryPath;
+	NSString* _settingsPath;
+	NSString* _trashPath;
 	NSString* _pathSelectedForFileOp;
 }
 - (void) runApplication;
@@ -56,16 +66,20 @@
 - (void) resumeApplication;
 - (void) suspendApplication;
 - (void) getLaunchInfo;
+- (void) createNavigationBar;
+- (void) createFileOpBar;
+- (void) backButtonPressed;
+- (void) trashButtonPressed;
+- (void) homeButtonPressed;
 - (void) makeBrowserActive;
 - (void) makeSettingsActive;
+- (void) applyStyles;
+- (void) updatePrompt;
 - (void) resetFileOpButtons;
 - (void) copyButtonPressed;
 - (void) moveButtonPressed;
 - (void) deleteButtonPressed;
 - (void) renameButtonPressed;
 - (void) newButtonPressed;
-- (void) navigationBar: (UINavigationBar*)navbar buttonClicked: (int)button;
-- (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
-- (void) browserCurrentHighlightedPathChanged: (MFBrowser*) browser toPath: (NSString*) path;
 @end
 
