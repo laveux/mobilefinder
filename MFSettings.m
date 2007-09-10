@@ -51,7 +51,7 @@
 	withMFApp: (MFApp*)app
 {
 	//Init view with frame rect
-	[super initWithFrame: rect];
+	self = [super initWithFrame: rect];
 	
 	//Save pointer to app
 	_app = app;
@@ -345,7 +345,6 @@
 
 - (void) setBrowserRowHeight: (int)value
 {
-	//TODO: Need to check min and max?
 	[_browserRowHeightSlider setValue: (float)value];
 }
 
@@ -425,8 +424,8 @@
 	[self setLaunchExecutables: FALSE];
 	[self setProtectSystemFiles: TRUE];
 	[self setBrowserRowHeight: 48];
-	[self setButtonStyleRed];
-	[self setBarStyleBlack];	
+	[self setButtonStyleBlue];
+	[self setBarStyleBlue];	
 	
 	//Ensure we have a clean application startup array
 	[_applicationStartupPaths release];

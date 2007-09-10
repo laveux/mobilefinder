@@ -30,24 +30,58 @@
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <UIKit/UIView.h>
+#import <UIKit/UIPreferencesTable.h>
+#import <UIKit/UIPreferencesTableCell.h>
+#import <UIKit/UIPreferencesTextTableCell.h>
+#import <UIKit/UINavBarButton.h>
+#import <UIKit/UITextLabel.h>
 
 @interface MFFileInfo : UIView
 {
 	UIPreferencesTable* _infoTable;
 	
-	UIPreferencesTableCell* _actionsGroup;	
-	UIPreferencesTableCell* _saveCell;
-	
-	UIPreferencesTableCell* _fileInfoGroup;
-	UIPreferencesTextTableCell* _filenameCell;
-	UIPreferencesTableCell* _createdDateCell;
-	UIPreferencesTableCell* _modifiedDateCell;
-	
 	UIPreferencesTableCell* _attributesGroup;
+	UIPreferencesTextTableCell* _filenameCell;
 	UIPreferencesTableCell* _ownerAttribCell;
 	UIPreferencesTableCell* _groupAttribCell;
-	UIPreferencesTableCell* _allAttribCell;	
+	UIPreferencesTableCell* _allAttribCell;
+	
+	UIPreferencesTableCell* _fileInfoGroup;
+	UIPreferencesTableCell* _fileInfoCell;
+	
+	UINavBarButton* _ownerAttribReadButton;
+	UINavBarButton* _ownerAttribWriteButton;
+	UINavBarButton* _ownerAttribExecuteButton;
+	UINavBarButton* _groupAttribReadButton;
+	UINavBarButton* _groupAttribWriteButton;
+	UINavBarButton* _groupAttribExecuteButton;
+	UINavBarButton* _allAttribReadButton;
+	UINavBarButton* _allAttribWriteButton;
+	UINavBarButton* _allAttribExecuteButton;
+	UITextLabel* _fileInfoLabel;
+	
+	NSFileManager* _fileManager;
+	NSString* _absolutePath;
+	unsigned long _permissions;
+	int _buttonInactiveStyle;
+	int _buttonActiveStyle;
 }
-- (void) initWithFrame: (struct CGRect)frame;
+- (id) initWithFrame: (struct CGRect)frame;
 - (void) dealloc;
+- (void) fillWithFile: (NSString*)absolutePath;
+- (NSString*) stringFromFileSize: (NSNumber*)size;
+- (NSString*) quoteString: (NSString*)string;
+- (void) updatePermissionsButtons;
+- (void) saveChanges;
+- (void) buttonPressed: (UINavBarButton*)button;
+- (void) ownerAttribReadButtonPressed;
+- (void) ownerAttribWriteButtonPressed;
+- (void) ownerAttribExecuteButtonPressed;
+- (void) groupAttribReadButtonPressed;
+- (void) groupAttribWriteButtonPressed;
+- (void) groupAttribExecuteButtonPressed;
+- (void) allAttribReadButtonPressed;
+- (void) allAttribWriteButtonPressed;
+- (void) allAttribExecuteButtonPressed;
+
 @end

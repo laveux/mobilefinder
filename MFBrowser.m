@@ -613,11 +613,7 @@
 	if (move == TRUE)
 	{
 		//operationSuccess = [_fileManager movePath: srcPath toPath: dstPath handler: nil];
-		//[[NSFileManager defaultManager] movePath: @"/Test" toPath: @"/System/Test" handler: nil];
-		
 		//HACK: It seems that Apple removed the NSFileManager movePath:toPath:handler selector. Use system command.
-		//TODO: Shell characters in path mess up command
-		
 		NSString* moveCommand = [[[[[NSString string]
 			stringByAppendingString: @"/bin/mv "] 
 			stringByAppendingString: [self quoteString: absoluteSrcPath]]
@@ -630,9 +626,7 @@
 	else
 	{
 		//operationSuccess = [_fileManager copyPath: srcPath toPath: dstPath handler: nil];
-		
 		//HACK: It seems that Apple removed the NSFileManager copyPath:toPath:handler selector. Use system command.
-		//TODO: Shell characters in path mess up command
 		NSString* copyCommand = [[[[[NSString string]
 			stringByAppendingString: @"/bin/cp -R "] 
 			stringByAppendingString: [self quoteString: absoluteSrcPath]]

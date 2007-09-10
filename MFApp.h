@@ -29,6 +29,7 @@
 #import <UIKit/UIApplication.h>
 #import <UIKit/UIGradientBar.h>
 #import "MFBrowser.h"
+#import "MFFileInfo.h"
 #import "MFSettings.h"
 
 @interface MFApp : UIApplication
@@ -38,6 +39,7 @@
 	UIWindow* _window;
 	UIView* _mainView;
 	MFBrowser* _browser;
+	MFFileInfo* _fileInfo;
 	MFSettings* _settings;
 	
 	CGRect _navBarFrame;
@@ -53,7 +55,7 @@
 	UINavBarButton* _moveButton;
 	UINavBarButton* _copyButton;
 	UINavBarButton* _deleteButton;
-	UINavBarButton* _renameButton;
+	UINavBarButton* _infoButton;
 	UINavBarButton* _newButton;
 	
 	NSString* _appLibraryPath;
@@ -79,7 +81,7 @@
 - (void) copyButtonPressed;
 - (void) moveButtonPressed;
 - (void) deleteButtonPressed;
-- (void) renameButtonPressed;
+- (void) infoButtonPressed;
 - (void) newButtonPressed;
 @end
 

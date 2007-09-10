@@ -71,7 +71,8 @@ typedef struct __GSEvent
 	_trashPath = [_appLibraryPath 
 		stringByAppendingPathComponent: @"Trash"];
 	[_trashPath retain];
-	_settingsPath = [[_appLibraryPath 
+	_settingsPath = [[[[self userLibraryDirectory]
+		stringByAppendingPathComponent: @"Preferences"]
 		stringByAppendingPathComponent: _applicationID]
 		stringByAppendingPathExtension: @"plist"];
 	[_settingsPath retain];
@@ -101,6 +102,12 @@ typedef struct __GSEvent
 		withMFApp: self];
 	[_settings setDelegate: self];	
 	
+	//Setup the file info viewer
+	_fileInfo = [[MFFileInfo alloc] initWithFrame: CGRectMake(
+		0.0f, 
+		navBarHeight, 
+		screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
+		
 	//Setup the file browser
 	_browser = [[MFBrowser alloc] initWithApplication: self 
 		withAppID: _applicationID
@@ -116,6 +123,7 @@ typedef struct __GSEvent
 	[self applyStyles];
 	
 	//Make the browser active at start
+	//TODO: no longer suspends! Why!?!
 	[self makeSettingsActive];
 	[self makeBrowserActive];
 	
@@ -129,6 +137,7 @@ typedef struct __GSEvent
 	[_window release];
 	[_mainView release];
 	[_browser release];
+	[_fileInfo release];
 	[_settings release];
 	[_navBar release];
 	[_backButton release];
@@ -139,7 +148,7 @@ typedef struct __GSEvent
 	[_moveButton release];
 	[_copyButton release];
 	[_deleteButton release];
-	[_renameButton release];
+	[_infoButton release];
 	[_newButton release];
 	
 	//Release private data
@@ -330,7 +339,7 @@ typedef struct __GSEvent
 	float moveButtonWidth = 60.0f;
 	float copyButtonWidth = 60.0f;
 	float deleteButtonWidth = 60.0f;
-	float renameButtonWidth = 60.0f;
+	float infoButtonWidth = 60.0f;
 	float newButtonWidth = 60.0f;
 	
 	//Setup file operations bar
@@ -354,7 +363,7 @@ typedef struct __GSEvent
 	[_fileOpBar addSubview: _copyButton];
 	
 	_moveButton = [_fileOpBar createButtonWithContents: @"Move" 
-		width: copyButtonWidth 
+		width: moveButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
@@ -368,7 +377,7 @@ typedef struct __GSEvent
 	[_fileOpBar addSubview: _moveButton];
 	
 	_deleteButton = [_fileOpBar createButtonWithContents: @"Delete" 
-		width: copyButtonWidth 
+		width: deleteButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
@@ -380,28 +389,14 @@ typedef struct __GSEvent
 	[_deleteButton addTarget: self action: @selector(deleteButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
 	[_fileOpBar addSubview: _deleteButton];
-	
-	_renameButton = [_fileOpBar createButtonWithContents: @"Name" 
-		width: copyButtonWidth 
-		barStyle: [_settings barStyle]
-		buttonStyle: [_settings buttonInactiveStyle] 
-		isRight: FALSE];
-	[_renameButton setFrame: CGRectMake(
-		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0 + fileOpBarButtonGroupBuffer, 
-		fileOpBarNorthBuffer, 
-		renameButtonWidth, fileOpBarButtonHeight)];
-	[_renameButton setAutosizesToFit: FALSE];
-	[_renameButton addTarget: self action: @selector(renameButtonPressed) forEvents: 1];	
-	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _renameButton];
-	
+		
 	_newButton = [_fileOpBar createButtonWithContents: @"New" 
-		width: copyButtonWidth 
+		width: newButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
 	[_newButton setFrame: CGRectMake(
-		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + renameButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
+		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0 + fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
 		newButtonWidth, fileOpBarButtonHeight)];
 	[_newButton setAutosizesToFit: FALSE];
@@ -409,12 +404,32 @@ typedef struct __GSEvent
 	[self resetFileOpButtons];
 	[_fileOpBar addSubview: _newButton];
 	
+	_infoButton = [_fileOpBar createButtonWithContents: @"Info" 
+		width: infoButtonWidth 
+		barStyle: [_settings barStyle]
+		buttonStyle: [_settings buttonInactiveStyle] 
+		isRight: FALSE];
+	[_infoButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + newButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
+		fileOpBarNorthBuffer, 
+		infoButtonWidth, fileOpBarButtonHeight)];
+	[_infoButton setAutosizesToFit: FALSE];
+	[_infoButton addTarget: self action: @selector(infoButtonPressed) forEvents: 1];	
+	[self resetFileOpButtons];
+	[_fileOpBar addSubview: _infoButton];
+	
 	[_mainView addSubview: _fileOpBar];
 }
 
 - (void) backButtonPressed
 {
-	[_browser changeDirectoryToLast];
+	if ([_mainView containsView: _browser])
+		[_browser changeDirectoryToLast];
+	else //[_mainView containsView: _fileInfo]
+	{
+		//Simulate a press of the info button to switch back to the browser
+		[self infoButtonPressed];
+	}
 }
 
 - (void) trashButtonPressed
@@ -444,8 +459,21 @@ typedef struct __GSEvent
 	
 	//Update buttons and bars
 	[_settings removeFromSuperview];
+	[_fileInfo removeFromSuperview];
 	[_mainView addSubview: _browser];
 	[self applyStyles];	
+}
+
+- (void) makeFileInfoActive
+{
+	if ([_mainView containsView: _fileInfo])
+		return;
+		
+	//Update buttons and bars
+	[_settings removeFromSuperview];
+	[_browser removeFromSuperview];
+	[_mainView addSubview: _fileInfo];
+	[self applyStyles];
 }
 
 - (void) makeSettingsActive
@@ -458,17 +486,17 @@ typedef struct __GSEvent
 	
 	//Update buttons and bars
 	[_browser removeFromSuperview];
+	[_fileInfo removeFromSuperview];
 	[_mainView addSubview: _settings];
 	[self applyStyles];
-		
-	//HACK: This should go in a more proper place
-	//[[UIKeyboard activeKeyboard] deactivate];
 }
 
 - (void) applyStyles
 {
 	//Apply bar styles by recreating them
 	BOOL inBrowserView = [_mainView containsView: _browser];
+	BOOL inFileInfoView = [_mainView containsView: _fileInfo];
+	BOOL inSettingsView = [_mainView containsView: _settings];
 	[self createNavigationBar];
 	[self createFileOpBar];
 	
@@ -481,9 +509,28 @@ typedef struct __GSEvent
 		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_backButton setEnabled: TRUE];
 		[_trashButton setEnabled: TRUE];
-		[_homeButton setEnabled: TRUE];	
+		[_homeButton setEnabled: TRUE];
+		[self resetFileOpButtons];
 	}
-	else
+	else if (inFileInfoView)
+	{
+		[_mainView addSubview: _fileOpBar];
+		
+		//TODO: This really should be in fileOp buttons below, but recreate of buttons in createFileOpBar resets buttons.  Fix!
+		[_deleteButton setEnabled: FALSE];
+		[_moveButton setEnabled: FALSE];
+		[_copyButton setEnabled: FALSE];
+		[_newButton setEnabled: FALSE];
+		[_infoButton setTitle: @"Done"];
+		[_infoButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		
+		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_backButton setEnabled: TRUE];
+		[_trashButton setEnabled: FALSE];
+		[_homeButton setEnabled: FALSE];	
+	}
+	else// if (inSettingsView)
 	{
 		[_fileOpBar removeFromSuperview];
 		
@@ -493,10 +540,8 @@ typedef struct __GSEvent
 		[_backButton setEnabled: FALSE];
 		[_trashButton setEnabled: FALSE];
 		[_homeButton setEnabled: FALSE];
+		[self resetFileOpButtons];
 	}
-	
-	//Apply file operation bar button styles
-	[self resetFileOpButtons];
 }
 
 - (void) updatePrompt
@@ -537,17 +582,17 @@ typedef struct __GSEvent
 		[_deleteButton setTitle: @"Delete"];
 		[_deleteButton setEnabled: TRUE];
 	}
-	if (_renameButton != nil)
-	{
-		[_renameButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_renameButton setTitle: @"Name"];
-		[_renameButton setEnabled: TRUE];
-	}
 	if (_newButton != nil)
 	{
 		[_newButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_newButton setTitle: @"New"];
 		[_newButton setEnabled: TRUE];
+	}
+	if (_infoButton != nil)
+	{
+		[_infoButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_infoButton setTitle: @"Info"];
+		[_infoButton setEnabled: TRUE];
 	}
 }
 
@@ -561,8 +606,8 @@ typedef struct __GSEvent
 		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_moveButton setTitle: @"Copy"];
 		[_deleteButton setEnabled: FALSE];
-		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
+		[_infoButton setEnabled: FALSE];
 		
 		[_pathSelectedForFileOp autorelease];
 		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
@@ -621,8 +666,8 @@ typedef struct __GSEvent
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Move"];
 		[_deleteButton setEnabled: FALSE];
-		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
+		[_infoButton setEnabled: FALSE];
 		
 		[_pathSelectedForFileOp autorelease];
 		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
@@ -656,32 +701,8 @@ typedef struct __GSEvent
 		[_moveButton setEnabled: FALSE];
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Delete"];
-		[_renameButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-	}
-	else
-	{
-		[self resetFileOpButtons];
-	}
-}
-
-- (void) renameButtonPressed
-{
-	if ([[_renameButton title] isEqualToString: @"Name"] && [_browser currentSelectedPath] != nil)
-	{
-		[self resetFileOpButtons];
-		[_moveButton setEnabled: FALSE];
-		[_copyButton setEnabled: FALSE];
-		[_deleteButton setEnabled: FALSE];
-		[_renameButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_renameButton setTitle: @"Cancel"];
-		[_newButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_newButton setTitle: @"Name"];
-	}
-	else if ([[_renameButton title] isEqualToString: @"Cancel"])
-	{
-		[_browser endRenameSaving: FALSE];
-		[self resetFileOpButtons];
+		[_infoButton setEnabled: FALSE];
 	}
 	else
 	{
@@ -699,23 +720,28 @@ typedef struct __GSEvent
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"File"];
 		[_deleteButton setEnabled: FALSE];
-		[_renameButton setEnabled: FALSE];
+		[_infoButton setEnabled: FALSE];
 		[_newButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_newButton setTitle: @"Cancel"];
-	}
-	else if ([[_newButton title] isEqualToString: @"Name"])
-	{
-		[_newButton setTitle: @"Done"];
-		[_browser beginRenamePath: [_browser currentSelectedPath]];
-	}
-	else if ([[_newButton title] isEqualToString: @"Done"])
-	{
-		[_browser endRenameSaving: TRUE];
-		[self resetFileOpButtons];
 	}
 	else
 	{
 		[self resetFileOpButtons];
+	}
+}
+
+- (void) infoButtonPressed
+{
+	if ([[_infoButton title] isEqualToString: @"Info"] && [_browser currentSelectedPath] != nil)
+	{
+		[_fileInfo fillWithFile: [_browser currentSelectedPath]];
+		[self makeFileInfoActive];
+	}
+	else// if ([[_infoButton title] isEqualToString: @"Done"] && [_browser currentSelectedPath] != nil)
+	{
+		[_fileInfo saveChanges];
+		[self resetFileOpButtons];
+		[self makeBrowserActive];
 	}
 }
 
