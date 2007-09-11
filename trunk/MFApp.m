@@ -39,6 +39,7 @@
 #import <UIKit/UITableColumn.h>
 #import <UIKit/UINavBarButton.h>
 #import <UIKit/UIGradientBar.h>
+#import <UIKit/UITransitionView.h>
 #import "MFApp.h"
 #import "MFBrowser.h"
 #import "MFSettings.h"
@@ -81,40 +82,35 @@ typedef struct __GSEvent
 	[[NSFileManager defaultManager] createDirectoryAtPath: _appLibraryPath attributes: nil];
 	[[NSFileManager defaultManager] createDirectoryAtPath: _trashPath attributes: nil];
 	
-	//Setup main view
+	//Setup content view
     struct CGRect screenRect = [UIHardware fullScreenApplicationContentRect];
     screenRect.origin.x = 0.0;
 	screenRect.origin.y = 0.0f;
-    _mainView = [[UIView alloc] initWithFrame: screenRect];
+    _contentView = [[UITransitionView alloc] initWithFrame: screenRect];
     
 	//Control sizes
 	float navBarWidth = screenRect.size.width;
 	float navBarHeight = 74.0f;
 	float fileOpBarWidth = screenRect.size.width;
 	float fileOpBarHeight = 46.0f;
-		
+	
+	//Setup the main transition view
+	CGRect viewRect = CGRectMake(0.0f, 0.0f, screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight);
+	CGRect mainViewRect = viewRect;
+	mainViewRect.origin.y = navBarHeight;
+	_mainView = [[UITransitionView alloc] initWithFrame: mainViewRect];
+	[_mainView setDelegate: self];
+	[_contentView addSubview: _mainView];
+	
 	//Setup the settings pane (and load settings)
-	_settings = [[MFSettings alloc] initWithFrame: CGRectMake(
-			0.0f, 
-			navBarHeight, 
-			screenRect.size.width, screenRect.size.height - navBarHeight)
-		withSettingsPath: _settingsPath
-		withMFApp: self];
-	[_settings setDelegate: self];	
+	_settings = [[MFSettings alloc] initWithFrame: viewRect	withSettingsPath: _settingsPath	withMFApp: self];
+	[_settings setDelegate: self];
 	
 	//Setup the file info viewer
-	_fileInfo = [[MFFileInfo alloc] initWithFrame: CGRectMake(
-		0.0f, 
-		navBarHeight, 
-		screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
+	_fileInfo = [[MFFileInfo alloc] initWithFrame: viewRect];
 		
 	//Setup the file browser
-	_browser = [[MFBrowser alloc] initWithApplication: self 
-		withAppID: _applicationID
-		withFrame: CGRectMake(
-			0.0f, 
-			navBarHeight, 
-			screenRect.size.width, screenRect.size.height - navBarHeight - fileOpBarHeight)];
+	_browser = [[MFBrowser alloc] initWithApplication: self withAppID: _applicationID withFrame: viewRect];
 	[_browser setDelegate: self];
 	
 	//Setup navigation bars
@@ -124,7 +120,7 @@ typedef struct __GSEvent
 	
 	//Make the browser active at start
 	//TODO: no longer suspends! Why!?!
-	[self makeSettingsActive];
+	//[self makeSettingsActive];
 	[self makeBrowserActive];
 	
 	//Create window and other initalization tasks
@@ -135,6 +131,7 @@ typedef struct __GSEvent
 {
 	//Release UI elements
 	[_window release];
+	[_contentView release];
 	[_mainView release];
 	[_browser release];
 	[_fileInfo release];
@@ -171,6 +168,9 @@ typedef struct __GSEvent
 	//Get launch info from plist
 	[self getLaunchInfo];
 	
+	//Read settings file
+	[_settings readSettings];
+	
 	//If launched by an application, enter mandatory launch mode
 	if (_launchingApplicationID != nil)
 	{
@@ -187,7 +187,7 @@ typedef struct __GSEvent
 	
 	//Initialize window
 	_window = [[UIWindow alloc] initWithContentRect: [UIHardware fullScreenApplicationContentRect]];
-	[_window setContentView: _mainView];
+	[_window setContentView: _contentView];
 	[_window orderFront: self];
 	[_window makeKey: self];
 	[_window _setHidden: NO];
@@ -201,12 +201,11 @@ typedef struct __GSEvent
 	//If already suspended, just return
 	if (_window == nil)
 		return;
-		
+	
 	//Save path for application if in mandatory open mode
 	if (_launchingApplicationID != nil)
 	{
 		[_settings setStartupPath: [_browser currentDirectory] forApplication: _launchingApplicationID];
-		[_settings writeSettings];
 	}
 	else 
 	{
@@ -214,10 +213,12 @@ typedef struct __GSEvent
 		if ([_settings startupInLastPath] == TRUE)
 		{
 			[_settings setStartupPath: [_browser currentDirectory]];
-			[_settings writeSettings];
 		}
 	}
-		
+	
+	//Save settings
+	[_settings writeSettings];
+	
 	//Release window
 	[_window release];
 	_window = nil;
@@ -326,7 +327,7 @@ typedef struct __GSEvent
 	[_navBar addSubview: _homeButton];
 	
 	//Add nav bar to view
-	[_mainView addSubview: _navBar];
+	[_contentView addSubview: _navBar];
 }
 
 - (void) createFileOpBar
@@ -418,7 +419,7 @@ typedef struct __GSEvent
 	[self resetFileOpButtons];
 	[_fileOpBar addSubview: _infoButton];
 	
-	[_mainView addSubview: _fileOpBar];
+	[_contentView addSubview: _fileOpBar];
 }
 
 - (void) backButtonPressed
@@ -448,7 +449,6 @@ typedef struct __GSEvent
 		return;
 	
 	//Update settings
-	[_settings writeSettings];
 	[_browser setShowHiddenFiles: [_settings showHiddenFiles]];
 	[_browser setLaunchApplications: [_settings launchApplications]];
 	[_browser setLaunchExecutables: [_settings launchExecutables]];
@@ -458,10 +458,7 @@ typedef struct __GSEvent
 	[_browser setRowHeight: (float)[_settings browserRowHeight] bufferHeight: 4.0f];
 	
 	//Update buttons and bars
-	[_settings removeFromSuperview];
-	[_fileInfo removeFromSuperview];
-	[_mainView addSubview: _browser];
-	[self applyStyles];	
+	[_mainView transition: 1 toView: _browser];
 }
 
 - (void) makeFileInfoActive
@@ -470,10 +467,7 @@ typedef struct __GSEvent
 		return;
 		
 	//Update buttons and bars
-	[_settings removeFromSuperview];
-	[_browser removeFromSuperview];
-	[_mainView addSubview: _fileInfo];
-	[self applyStyles];
+	[_mainView transition: 1 toView: _fileInfo];
 }
 
 - (void) makeSettingsActive
@@ -485,62 +479,61 @@ typedef struct __GSEvent
 	[_settings readSettings];
 	
 	//Update buttons and bars
-	[_browser removeFromSuperview];
-	[_fileInfo removeFromSuperview];
-	[_mainView addSubview: _settings];
-	[self applyStyles];
+	[_mainView transition: 1 toView: _settings];
 }
 
 - (void) applyStyles
 {
 	//Apply bar styles by recreating them
-	BOOL inBrowserView = [_mainView containsView: _browser];
-	BOOL inFileInfoView = [_mainView containsView: _fileInfo];
-	BOOL inSettingsView = [_mainView containsView: _settings];
 	[self createNavigationBar];
 	[self createFileOpBar];
 	
-	//Reset bar and button settings to what they were before	
-	if (inBrowserView)
+	//Reset bar and button settings to appropriate setting for view type	
+	if ([_mainView containsView: _browser])
 	{
-		[_mainView addSubview: _fileOpBar];
-		
+		//Set navBar state
 		[_finderButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_backButton setEnabled: TRUE];
 		[_trashButton setEnabled: TRUE];
 		[_homeButton setEnabled: TRUE];
+		
+		//Set fileOp bar state
 		[self resetFileOpButtons];
 	}
-	else if (inFileInfoView)
+	else if ([_mainView containsView: _fileInfo])
 	{
-		[_mainView addSubview: _fileOpBar];
+		//Set navBar state
+		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_backButton setEnabled: TRUE];
+		[_trashButton setEnabled: FALSE];
+		[_homeButton setEnabled: FALSE];
 		
-		//TODO: This really should be in fileOp buttons below, but recreate of buttons in createFileOpBar resets buttons.  Fix!
+		//Set fileOp bar state
 		[_deleteButton setEnabled: FALSE];
 		[_moveButton setEnabled: FALSE];
 		[_copyButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
 		[_infoButton setTitle: @"Done"];
 		[_infoButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		
-		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_backButton setEnabled: TRUE];
-		[_trashButton setEnabled: FALSE];
-		[_homeButton setEnabled: FALSE];	
 	}
-	else// if (inSettingsView)
+	else// if ([_mainView containsView: _settings])
 	{
-		[_fileOpBar removeFromSuperview];
-		
-		[_fileOpBar removeFromSuperview];
+		//Set navBar state
 		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_settingsButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_backButton setEnabled: FALSE];
 		[_trashButton setEnabled: FALSE];
 		[_homeButton setEnabled: FALSE];
+		
+		//Set fileOp bar state
 		[self resetFileOpButtons];
+		[_deleteButton setEnabled: FALSE];
+		[_moveButton setEnabled: FALSE];
+		[_copyButton setEnabled: FALSE];
+		[_newButton setEnabled: FALSE];
+		[_infoButton setEnabled: FALSE];
 	}
 }
 
@@ -762,7 +755,10 @@ typedef struct __GSEvent
 }
 
 
-
+- (void) notifyDidCompleteTransition: (id)unknown
+{
+	[self applyStyles];
+}
 
 //Application delegate methods
 - (void) applicationDidFinishLaunching: (id)unknown

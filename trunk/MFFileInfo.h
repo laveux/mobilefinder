@@ -60,6 +60,7 @@
 	UINavBarButton* _allAttribExecuteButton;
 	UITextLabel* _fileInfoLabel;
 	
+	UIKeyboard* _keyboard;
 	NSFileManager* _fileManager;
 	NSString* _absolutePath;
 	unsigned long _permissions;

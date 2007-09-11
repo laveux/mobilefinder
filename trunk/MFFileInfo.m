@@ -37,7 +37,9 @@
 #import <UIKit/UIPreferencesTableCell.h>
 #import <UIKit/UIPreferencesTextTableCell.h>
 #import <UIKit/UITextField.h>
+#import <UIKit/UITextField-Internal.h>
 #import <UIKit/UIImage.h>
+#import <UIKit/UIKeyboard.h>
 #import "MFFileInfo.h"
 
 @implementation MFFileInfo : UIView
@@ -84,6 +86,7 @@
 	[_attributesGroup setIcon: [UIImage applicationImageNamed: @"Finder_32x32.png"]];	
 	_filenameCell = [[UIPreferencesTextTableCell alloc] init];	
 	[_filenameCell setTitle: @"Filename"];
+	[_filenameCell setReturnAction: @selector(saveChanges)];
 	
 	_ownerAttribCell = [[UIPreferencesTableCell alloc] init];	
 	[_ownerAttribCell setTitle: @"Owner"];
@@ -193,6 +196,7 @@
 	
 	[_absolutePath release];
 	[_fileManager release];
+	[_keyboard release];
 	
 	[super dealloc];
 }
@@ -374,7 +378,7 @@
 		_permissions ^= allWriteMask;
 	else if (button == _allAttribExecuteButton)
 		_permissions ^= allExecuteMask;
-		
+	
 	[self updatePermissionsButtons];
 }
 - (void) ownerAttribReadButtonPressed { [self buttonPressed: _ownerAttribReadButton]; }
@@ -473,6 +477,25 @@
 			}
 		default: return nil;
 	}
+}
+
+//These Methods track delegate calls made to the application
+- (NSMethodSignature*)methodSignatureForSelector:(SEL)selector 
+{
+	NSLog(@"Requested method for selector: %@", NSStringFromSelector(selector));
+	return [super methodSignatureForSelector:selector];
+}
+
+- (BOOL)respondsToSelector:(SEL)aSelector 
+{
+	NSLog(@"Request for selector: %@", NSStringFromSelector(aSelector));
+	return [super respondsToSelector:aSelector];
+}
+
+- (void)forwardInvocation:(NSInvocation *)anInvocation 
+{
+	NSLog(@"Called from: %@", NSStringFromSelector([anInvocation selector]));
+	[super forwardInvocation:anInvocation];
 }
 
 @end
