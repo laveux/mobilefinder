@@ -379,15 +379,16 @@
 - (void) setBarStyle: (int)style
 {
 	_barStyle = style;
-	[_app applyStyles];
 }
 - (void) setBarStyleBlue 
 { 
-	[self setBarStyle: 0]; 
+	[self setBarStyle: 0];
+	[_app applyStyles]; 
 }
 - (void) setBarStyleBlack 
 { 
-	[self setBarStyle: 1]; 
+	[self setBarStyle: 1];
+	[_app applyStyles];
 }
 
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations
