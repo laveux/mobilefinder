@@ -28,6 +28,7 @@
 #import <UIKit/UIKit.h>
 #import <UIKit/UIApplication.h>
 #import <UIKit/UIGradientBar.h>
+#import <UIKit/UITransitionView.h>
 #import "MFBrowser.h"
 #import "MFFileInfo.h"
 #import "MFSettings.h"
@@ -37,7 +38,8 @@
 	NSString* _applicationID;
 	NSString* _launchingApplicationID;
 	UIWindow* _window;
-	UIView* _mainView;
+	UIView* _contentView;
+	UITransitionView* _mainView;
 	MFBrowser* _browser;
 	MFFileInfo* _fileInfo;
 	MFSettings* _settings;
