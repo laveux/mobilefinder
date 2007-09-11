@@ -28,7 +28,8 @@
 */
 
 #import <Foundation/Foundation.h>
-#import <CoreFoundation/CoreFoundation.h>
+#import <CoreFoundation/CoreFoundation.h>	
+#import <ApplicationServices/ApplicationServices.h>
 #import <UIKit/CDStructures.h>
 #import <UIKit/UIApplication.h>
 #import <UIKit/UIPushButton.h>
@@ -51,7 +52,7 @@
 #import "MFBrowser.h"
 #import "MobileStudio/MSAppLauncher.h"
 
-@implementation MFBrowser : UIView
+@implementation MFBrowser : UITransitionView
 
 - (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect
 {
@@ -61,6 +62,9 @@
 	//Save application object for launching other apps
 	_application = app;
 	_applicationID = appID;
+	
+	//Initialize state variables
+	_lastSelectedPath = nil;
 	
 	//Set preference defaults
 	_showHiddenFiles = FALSE;
@@ -73,9 +77,6 @@
 	_rowHeight = 48.0f;
 	_rowHeightBuffer = 2.0f;
 	
-	//Initialize state variables
-	_lastSelectedPath = nil;
-	
 	//Setup fileview table
 	_fileviewTableRect = CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height);
     _fileviewTable = [[UITable alloc] initWithFrame: _fileviewTableRect];
@@ -85,21 +86,8 @@
     [_fileviewTable setDelegate: self];
 	[_fileviewTable setResusesTableCells: FALSE];
 	[_fileviewTable reloadData];
-	[self addSubview: _fileviewTable];
+	[self transition: 1 toView: _fileviewTable];
 	
-	//Create keyboard with which to rename files
-	//TODO: Make return button finish filename
-	CGRect kbRect;
-	kbRect.size = CGSizeMake(_fileviewTableRect.size.width, 216.0f);//[UIKeyboard defaultSize];
-	kbRect.origin.x = _fileviewTableRect.origin.y;
-	kbRect.origin.y = _fileviewTableRect.origin.y + _fileviewTableRect.size.height - kbRect.size.height;
-	_keyboard = [[UIKeyboard alloc] initWithFrame: kbRect];
-	
-	//Create text box with icon to rename the file with
-	CGRect textFieldRect = _fileviewTableRect;
-	textFieldRect.size.height = _fileviewTableRect.size.height - kbRect.size.height;
-	_filenameTextField = [[UITextView alloc] initWithFrame: textFieldRect];
-		
 	//List root
 	_fileManager = [NSFileManager defaultManager];
 	[self changeDirectoryToApplications];
@@ -120,15 +108,12 @@
 	[_application release];
 	[_applicationID release];
 	
+	//State variables
+	[_lastSelectedPath release];
+	
 	//Settings
 	[_fileTypeAssociations release];
 	[_mandatoryLaunchApplication release];
-	
-	//Rename feature
-	[_keyboard release];
-	[_filenameTextField release];
-	[_renamingFilename release];
-	[_lastSelectedPath release];
 	
 	[super dealloc];
 }
@@ -191,8 +176,7 @@
 
 - (void) setDelegate: (id)delegate;
 {
-	[_delegate autorelease];	
-	_delegate = [delegate retain];
+	[super setDelegate: delegate];
 		
 	[self openPath: [self currentDirectory]];
 }
@@ -244,6 +228,12 @@
 
 - (void) refreshFileView
 {
+	//Create snapshot of current setup for transition
+	//CGImageRef oldViewCGImage = [_fileviewTable createSnapshotWithRect: _fileviewTableRect];
+	//UIImage* oldViewImage = [[UIImage alloc] initWithImageRef: oldViewCGImage];
+	//UIImageView* oldView = [[UIImageView alloc] initWithImage: oldViewImage];
+	//[oldView setFrame: _fileviewTableRect];
+	
 	//Make sure we have new, empty fileviewCells and fileviewCellFilenames
 	[_fileviewCells release];				
 	_fileviewCells = [[NSMutableArray alloc] init];
@@ -302,9 +292,15 @@
 			[cell release];
 		}
 	}
-	
+		
 	//Refresh the fileview table
 	[_fileviewTable reloadData];
+	
+	//[self transition: 1 fromView: oldView toView: _fileviewTable];
+	//[oldView autorelease];
+	//[oldViewImage autorelease];
+	//TODO: Need to release this big image!
+	//CGImageRelease(oldViewCGImage);
 }
 
 - (void) selectPath: (NSString*)path
@@ -408,7 +404,7 @@
 	else if ([_fileManager changeCurrentDirectoryPath: path])
 	{
 		//Refresh the fileview table
-		[self refreshFileView];	
+		[self refreshFileView];
 		
 		//If moving to a path that is a parent of the last path, select the child in the current directory
 		//that is part of the last path
@@ -672,42 +668,6 @@
 {
 	BOOL operationSuccess = [_fileManager removeFileAtPath: path handler: nil];
 	[self refreshFileView];
-}
-
-- (void) beginRenamePath: (NSString*)path
-{
-	//TODO: select cell for path if not already selected (not needed for MobileFinder, but would be needed for other apps)
-	
-	//Get selected cell
-	UIImageAndTextTableCell* selectedCell = [_fileviewCells objectAtIndex: [_fileviewTable selectedRow]];
-	if (selectedCell == nil)
-		return;
-	NSString* selectedFilename = [_fileviewCellFilenames objectAtIndex: [_fileviewTable selectedRow]];
-	_renamingFilename = selectedFilename;
-	
-	//Setup the text field with the file's current name
-	[_filenameTextField setText: selectedFilename];
-	
-	//Add to view
-	[self addSubview: _filenameTextField];
-	[self addSubview: _keyboard];
-	[_fileviewTable removeFromSuperview];
-}
-
-- (void) endRenameSaving: (BOOL)save
-{
-	//Save file
-	if (save)
-	{
-		//Verify typed filename
-		NSString* newFilename = [[[_filenameTextField text] componentsSeparatedByString: @"\n"] lastObject];
-		[self sendSrcPath: _renamingFilename toDstPath: newFilename byMoving: TRUE];
-	}
-	
-	//Remove keyboard and filename textview
-	[_keyboard removeFromSuperview];
-	[_filenameTextField removeFromSuperview];
-	[self addSubview: _fileviewTable];
 }
 
 - (UITableCell*) table: (UITable*)table cellForRow: (int)row column: (int)col

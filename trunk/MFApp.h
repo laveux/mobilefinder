@@ -43,6 +43,7 @@
 	MFBrowser* _browser;
 	MFFileInfo* _fileInfo;
 	MFSettings* _settings;
+	UIView* _activeView;
 	
 	CGRect _navBarFrame;
 	UINavigationBar* _navBar;

@@ -116,7 +116,6 @@ typedef struct __GSEvent
 	//Setup navigation bars
 	_navBarFrame = CGRectMake(0.0, 0.0, navBarWidth, navBarHeight);
 	_fileOpBarFrame = CGRectMake(0.0f, screenRect.size.height - fileOpBarHeight, fileOpBarWidth, fileOpBarHeight);
-	[self applyStyles];
 	
 	//Make the browser active at start
 	//TODO: no longer suspends! Why!?!
@@ -424,9 +423,9 @@ typedef struct __GSEvent
 
 - (void) backButtonPressed
 {
-	if ([_mainView containsView: _browser])
+	if (_activeView == _browser)
 		[_browser changeDirectoryToLast];
-	else //[_mainView containsView: _fileInfo]
+	else if (_activeView == _fileInfo)
 	{
 		//Simulate a press of the info button to switch back to the browser
 		[self infoButtonPressed];
@@ -445,9 +444,9 @@ typedef struct __GSEvent
 
 - (void) makeBrowserActive
 {
-	if ([_mainView containsView: _browser])
+	if (_activeView == _browser)
 		return;
-	
+		
 	//Update settings
 	[_browser setShowHiddenFiles: [_settings showHiddenFiles]];
 	[_browser setLaunchApplications: [_settings launchApplications]];
@@ -457,29 +456,32 @@ typedef struct __GSEvent
 	//TODO: Buffer height setting or constant
 	[_browser setRowHeight: (float)[_settings browserRowHeight] bufferHeight: 4.0f];
 	
-	//Update buttons and bars
-	[_mainView transition: 1 toView: _browser];
+	//Update views, buttons and bars
+	[_mainView transition: 2 toView: _browser];
+	_activeView = _browser;
+	[self applyStyles];
 }
 
 - (void) makeFileInfoActive
 {
-	if ([_mainView containsView: _fileInfo])
+	if (_activeView == _fileInfo)
 		return;
 		
-	//Update buttons and bars
+	//Update views, buttons and bars
 	[_mainView transition: 1 toView: _fileInfo];
+	_activeView = _fileInfo;
+	[self applyStyles];
 }
 
 - (void) makeSettingsActive
 {
-	if ([_mainView containsView: _settings])
+	if (_activeView == _settings)
 		return;
 	
-	//Verify settings
-	[_settings readSettings];
-	
-	//Update buttons and bars
+	//Update views, buttons and bars
 	[_mainView transition: 1 toView: _settings];
+	_activeView = _settings;
+	[self applyStyles];
 }
 
 - (void) applyStyles
@@ -489,7 +491,7 @@ typedef struct __GSEvent
 	[self createFileOpBar];
 	
 	//Reset bar and button settings to appropriate setting for view type	
-	if ([_mainView containsView: _browser])
+	if (_activeView == _browser)
 	{
 		//Set navBar state
 		[_finderButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
@@ -501,7 +503,7 @@ typedef struct __GSEvent
 		//Set fileOp bar state
 		[self resetFileOpButtons];
 	}
-	else if ([_mainView containsView: _fileInfo])
+	else if (_activeView == _fileInfo)
 	{
 		//Set navBar state
 		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
@@ -518,7 +520,7 @@ typedef struct __GSEvent
 		[_infoButton setTitle: @"Done"];
 		[_infoButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 	}
-	else// if ([_mainView containsView: _settings])
+	else if (_activeView == _settings)
 	{
 		//Set navBar state
 		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
@@ -752,12 +754,6 @@ typedef struct __GSEvent
 {
 	[_settings setStartupPath: [_browser currentDirectory] forApplication: appID];
 	[_settings writeSettings];
-}
-
-
-- (void) notifyDidCompleteTransition: (id)unknown
-{
-	[self applyStyles];
 }
 
 //Application delegate methods

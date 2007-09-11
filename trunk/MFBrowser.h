@@ -29,7 +29,7 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
-#import <UIKit/UIView.h>
+#import <UIKit/UITransitionView.h>
 #import <UIKit/UITableCell.h>
 #import <UIKit/UIImageAndTextTableCell.h>
 #import <UIKit/UITable.h>
@@ -37,19 +37,22 @@
 #import <UIKit/UINavigationBar.h>
 #import <UIKit/UITextView.h>
 
-@interface MFBrowser : UIView
+@interface MFBrowser : UITransitionView
 {
 	//UI elements
+	CGRect _fileviewTableRect;
 	UITable* _fileviewTable;
 	UITableColumn* _fileviewTableCol;
 	NSMutableArray* _fileviewCells;
 	NSMutableArray* _fileviewCellFilenames;
-	NSFileManager* _fileManager;
-    
+	
 	//Communication
 	UIApplication* _application;
 	NSString* _applicationID;
-	id _delegate;
+	
+	//State variables
+	NSFileManager* _fileManager;
+    NSString* _lastSelectedPath;
 	
 	//Settings
 	BOOL _showHiddenFiles;
@@ -60,13 +63,6 @@
 	NSString* _mandatoryLaunchApplication;
 	float _rowHeight;
 	float _rowHeightBuffer;
-	
-	//Rename feature
-	CGRect _fileviewTableRect;
-	UIKeyboard* _keyboard;
-	UITextView* _filenameTextField;
-	NSString* _renamingFilename;
-	NSString* _lastSelectedPath;
 }
 - (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect;
 - (void) dealloc;
@@ -101,8 +97,6 @@
 - (void) makeDirectoryAtPath: (NSString*)path;
 - (void) makeFileAtPath: (NSString*)path;
 - (void) deletePath:(NSString*) path;
-- (void) beginRenamePath: (NSString*)path;
-- (void) endRenameSaving: (BOOL)save;
 
 @end
 
