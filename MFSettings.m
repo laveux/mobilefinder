@@ -84,6 +84,14 @@
 	[_showHiddenFilesCell setTitle: @"Show Hidden Files"];
 	_showHiddenFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
 	[_showHiddenFilesCell addSubview: _showHiddenFilesSwitch];
+	_showDotDotCell = [[UIPreferencesTableCell alloc] init];
+	[_showDotDotCell setTitle: @"Show \"..\" Entry"];
+	_showDotDotSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_showDotDotCell addSubview: _showDotDotSwitch];
+	_sortFilesCell = [[UIPreferencesTableCell alloc] init];
+	[_sortFilesCell setTitle: @"Sort By Kind"];
+	_sortFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_sortFilesCell addSubview: _sortFilesSwitch];
 	_launchApplicationsCell = [[UIPreferencesTableCell alloc] init];
 	[_launchApplicationsCell setTitle: @"Application Launch"];
 	_launchApplicationsSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
@@ -173,6 +181,8 @@
 	[_startupInLastPathCell release];
 	[_startupDirCell release];
 	[_showHiddenFilesCell release];
+	[_showDotDotCell release];
+	[_sortFilesCell release];
 	[_launchApplicationsCell release];
 	[_protectSystemFilesCell release];	
 	[_closeAppCell release];
@@ -187,6 +197,8 @@
 	
 	[_startupInLastPathSwitch release];
 	[_showHiddenFilesSwitch release];
+	[_showDotDotSwitch release];
+	[_sortFilesSwitch release];
 	[_launchApplicationsSwitch release];
 	[_launchExecutablesSwitch release];
 	[_protectSystemFilesSwitch release];
@@ -229,6 +241,16 @@
 - (BOOL) showHiddenFiles
 {
 	return [_showHiddenFilesSwitch value] != 0;
+}
+
+- (BOOL) showDotDot
+{
+	return [_showDotDotSwitch value] != 0;
+}
+
+- (BOOL) sortFiles
+{
+	return [_sortFilesSwitch value] != 0;
 }
 
 - (BOOL) launchApplications
@@ -328,6 +350,16 @@
 	[_showHiddenFilesSwitch setValue: (showHiddenFiles == TRUE ? 1 : 0)];
 }
 
+- (void) setShowDotDot: (BOOL)showDotDot
+{
+	[_showDotDotSwitch setValue: (showDotDot == TRUE ? 1 : 0)];
+}
+
+- (void) setSortFiles: (BOOL)sortFiles
+{
+	[_sortFilesSwitch setValue: (sortFiles == TRUE ? 1 : 0)];
+}
+
 - (void) setLaunchApplications: (BOOL)launchApplications
 {
 	[_launchApplicationsSwitch setValue: (launchApplications == TRUE ? 1 : 0)];
@@ -421,6 +453,8 @@
 	[self setStartupPath: @"/Applications"];
 	[self setStartupInLastPath: TRUE];
 	[self setShowHiddenFiles: FALSE];
+	[self setShowDotDot: FALSE];
+	[self setSortFiles: TRUE];
 	[self setLaunchApplications: TRUE];
 	[self setLaunchExecutables: FALSE];
 	[self setProtectSystemFiles: TRUE];
@@ -458,6 +492,14 @@
 			else if ([currKey isEqualToString: @"MFShowHiddenFiles"])
 			{
 				[self setShowHiddenFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
+			}
+			else if ([currKey isEqualToString: @"MFShowDotDot"])
+			{
+				[self setShowDotDot: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
+			}
+			else if ([currKey isEqualToString: @"MFSortFiles"])
+			{
+				[self setSortFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
 			else if ([currKey isEqualToString: @"MFLaunchApplications"])
 			{
@@ -543,6 +585,8 @@
 	//Extract plist-able versions of other settings
 	NSString* startupInLastPath = [self startupInLastPath] == FALSE ? @"0" : @"1";
 	NSString* showHiddenFilesValue = [self showHiddenFiles] == FALSE ? @"0" : @"1";
+	NSString* showDotDotValue = [self showDotDot] == FALSE ? @"0" : @"1";
+	NSString* sortFilesValue = [self sortFiles] == FALSE ? @"0" : @"1";
 	NSString* launchApplicationsValue = [self launchApplications] == FALSE ? @"0" : @"1";
 	NSString* launchExecutablesValue = [self launchExecutables] == FALSE ? @"0" : @"1";
 	NSString* protectSystemFilesValue = [self protectSystemFiles] == FALSE ? @"0" : @"1";
@@ -560,6 +604,8 @@
 		applicationStartupPaths, @"MFApplicationStartupPaths",
 		startupInLastPath, @"MFStartupInLastPath",
 		showHiddenFilesValue, @"MFShowHiddenFiles",
+		showDotDotValue, @"MFShowDotDot",
+		sortFilesValue, @"MFSortFiles",
 		launchApplicationsValue, @"MFLaunchApplications",
 		launchExecutablesValue, @"MFLaunchExecutables",
 		protectSystemFilesValue, @"MFProtectSystemFiles",
@@ -592,7 +638,7 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 7;		
+		case 1: return 9;		
 		case 2: return 0;
 		case 3: return 3;
 		case 4: return 0;
@@ -660,10 +706,12 @@
 				case 0:	return _startupDirCell;
 				case 1: return _startupInLastPathCell;
 				case 2: return _showHiddenFilesCell;
-				case 3: return _launchApplicationsCell;
-				case 4: return _launchExecutablesCell;
-				case 5: return _protectSystemFilesCell;
-				case 6: return _closeAppCell;
+				case 3: return _showDotDotCell;
+				case 4: return _sortFilesCell;
+				case 5: return _launchApplicationsCell;
+				case 6: return _launchExecutablesCell;
+				case 7: return _protectSystemFilesCell;
+				case 8: return _closeAppCell;
 			}
 		case 2: return _appearenceGroup;
 		case 3:

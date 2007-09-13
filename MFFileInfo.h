@@ -49,6 +49,7 @@
 	UIPreferencesTableCell* _fileInfoGroup;
 	UIPreferencesTableCell* _fileInfoCell;
 	
+	UINavBarButton* _doneButton;
 	UINavBarButton* _ownerAttribReadButton;
 	UINavBarButton* _ownerAttribWriteButton;
 	UINavBarButton* _ownerAttribExecuteButton;
@@ -60,6 +61,7 @@
 	UINavBarButton* _allAttribExecuteButton;
 	UITextLabel* _fileInfoLabel;
 	
+	SEL _doneButtonSelector;
 	UIKeyboard* _keyboard;
 	NSFileManager* _fileManager;
 	NSString* _absolutePath;
@@ -67,13 +69,14 @@
 	int _buttonInactiveStyle;
 	int _buttonActiveStyle;
 }
-- (id) initWithFrame: (struct CGRect)frame;
+- (id) initWithDoneSelector: (SEL)doneSelector withFrame: (struct CGRect)frame;
 - (void) dealloc;
 - (void) fillWithFile: (NSString*)absolutePath;
 - (NSString*) stringFromFileSize: (NSNumber*)size;
 - (NSString*) quoteString: (NSString*)string;
 - (void) updatePermissionsButtons;
 - (void) saveChanges;
+- (void) doneButtonPressed;
 - (void) buttonPressed: (UINavBarButton*)button;
 - (void) ownerAttribReadButtonPressed;
 - (void) ownerAttribWriteButtonPressed;

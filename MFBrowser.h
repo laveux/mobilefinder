@@ -36,6 +36,7 @@
 #import <UIKit/UITableColumn.h>
 #import <UIKit/UINavigationBar.h>
 #import <UIKit/UITextView.h>
+#import "MFFileInfo.h"
 
 @interface MFBrowser : UITransitionView
 {
@@ -45,6 +46,7 @@
 	UITableColumn* _fileviewTableCol;
 	NSMutableArray* _fileviewCells;
 	NSMutableArray* _fileviewCellFilenames;
+	MFFileInfo* _fileInfo;
 	
 	//Communication
 	UIApplication* _application;
@@ -53,13 +55,17 @@
 	//State variables
 	NSFileManager* _fileManager;
     NSString* _lastSelectedPath;
+	UIView* _activeView;
 	
 	//Settings
 	BOOL _showHiddenFiles;
+	BOOL _showDotDotRow;
+	BOOL _sortFiles;
 	BOOL _launchApplications;
 	BOOL _launchExecutables;
 	BOOL _protectSystemFiles;
 	NSArray* _fileTypeAssociations;
+	NSString* _executableLaunchProgram;
 	NSString* _mandatoryLaunchApplication;
 	float _rowHeight;
 	float _rowHeightBuffer;
@@ -71,25 +77,33 @@
 - (NSString*) currentSelectedPath;
 - (BOOL) launchApplications;
 - (BOOL) launchExecutables;
+- (NSString*) executableLaunchProgram;
 - (BOOL) showHiddenFiles;
+- (BOOL) showDotDotRow;
+- (BOOL) sortFiles;
 - (BOOL) protectSystemFiles;
 - (NSArray*) fileTypeAssociations;
 - (NSString*) mandatoryLaunchApplication;
 - (void) setDelegate: (id)delegate;
 - (void) setLaunchApplications: (BOOL)launchApplications;
 - (void) setLaunchExecutables: (BOOL)launchExecutables;
+- (void) setExecutableLaunchProgram: (NSString*)exeLaunchAppID;
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
+- (void) setShowDotDotRow: (BOOL)showDotDotRow;
+- (void) setSortFiles: (BOOL)sortFiles;
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) setMandatoryLaunchApplication: (NSString*)appID;
 - (void) setRowHeight: (int)rowHeight bufferHeight: (int)rowHeightBuffer;
+- (void) makeFileviewTableActive;
+- (void) makeFileInfoActive;
 - (void) refreshFileView;
 - (void) selectPath: (NSString*)path;
 - (void) selectRow: (int)row;
 - (void) openPath: (NSString*)path;
 - (UIImage*) determineFileIcon: (NSString*)absolutePath;
-- (void) changeDirectoryToRoot;
 - (void) changeDirectoryToLast;
+- (void) changeDirectoryToRoot;
 - (void) changeDirectoryToHome;
 - (void) changeDirectoryToApplications;
 - (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
@@ -97,6 +111,8 @@
 - (void) makeDirectoryAtPath: (NSString*)path;
 - (void) makeFileAtPath: (NSString*)path;
 - (void) deletePath:(NSString*) path;
+- (void) executeSystemCommand: (NSString*)command withSleepTime: (int)sleepTime;
+- (void) launchApplication: (NSString*) appID withArgs: (NSArray*)args;
 
 @end
 
