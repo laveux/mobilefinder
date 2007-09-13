@@ -30,7 +30,6 @@
 #import <UIKit/UIGradientBar.h>
 #import <UIKit/UITransitionView.h>
 #import "MFBrowser.h"
-#import "MFFileInfo.h"
 #import "MFSettings.h"
 
 @interface MFApp : UIApplication
@@ -41,7 +40,6 @@
 	UIView* _contentView;
 	UITransitionView* _mainView;
 	MFBrowser* _browser;
-	MFFileInfo* _fileInfo;
 	MFSettings* _settings;
 	UIView* _activeView;
 	

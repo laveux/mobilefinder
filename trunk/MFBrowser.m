@@ -52,6 +52,38 @@
 #import "MFBrowser.h"
 #import "MobileStudio/MSAppLauncher.h"
 
+int sortFilesByKind(id obj1, id obj2, void* context)
+{
+	//Type inputs
+	NSString* str1 = (NSString*)obj1;
+	NSString* str2 = (NSString*)obj2;
+	NSFileManager* fileManager = (NSFileManager*)context;	 
+	
+	//Sort directories to the top
+	BOOL isDirectory1;
+	BOOL isDirectory2;
+	if ([fileManager fileExistsAtPath: str1 isDirectory: &isDirectory1] == FALSE)
+		NSLog(@"Sorting file that doesn't exsist!");
+	if ([fileManager fileExistsAtPath: str2 isDirectory: &isDirectory2] == FALSE)
+		NSLog(@"Sorting file that doesn't exsist!");
+		
+	if (isDirectory1 && isDirectory2)
+		return [str1 localizedCompare: str2];
+	else if (isDirectory1)
+		return NSOrderedAscending;
+	else if (isDirectory2)
+		return NSOrderedDescending;
+	else
+	{
+		//Neither is directory, so compare extensions.  If extensions are same, compare filenames
+		int extensionCompare = [[str1 pathExtension] caseInsensitiveCompare: [str2 pathExtension]];
+		if (extensionCompare == NSOrderedSame)
+			return [str1 localizedCompare: str2];
+		else
+			return extensionCompare;
+	}
+}
+
 @implementation MFBrowser : UITransitionView
 
 - (id) initWithApplication: (UIApplication*)app withAppID: (NSString*)appID withFrame: (struct CGRect)rect
@@ -64,18 +96,22 @@
 	_applicationID = appID;
 	
 	//Initialize state variables
+	_fileManager = [NSFileManager defaultManager];
 	_lastSelectedPath = nil;
 	
-	//Set preference defaults
+	//Set reasonable preference defaults
 	_showHiddenFiles = FALSE;
+	_showDotDotRow = TRUE;
+	_sortFiles = TRUE;
 	_launchApplications = TRUE;
 	_launchExecutables = TRUE;
 	_protectSystemFiles = TRUE;
 	_fileTypeAssociations = nil;
+	_executableLaunchProgram = @"com.googlecode.mobileterminal.Term-vt100";
 	_mandatoryLaunchApplication = nil;
-	//TODO: Variable image sizes fully implemented
 	_rowHeight = 48.0f;
 	_rowHeightBuffer = 2.0f;
+	[self setRowHeight: _rowHeight bufferHeight: _rowHeightBuffer];
 	
 	//Setup fileview table
 	_fileviewTableRect = CGRectMake(0.0f, 0.0f, rect.size.width, rect.size.height);
@@ -86,12 +122,12 @@
     [_fileviewTable setDelegate: self];
 	[_fileviewTable setResusesTableCells: FALSE];
 	[_fileviewTable reloadData];
-	[self transition: 1 toView: _fileviewTable];
 	
-	//List root
-	_fileManager = [NSFileManager defaultManager];
-	[self changeDirectoryToApplications];
-	[self setRowHeight: _rowHeight bufferHeight: _rowHeightBuffer];
+	//Setup the file info viewer
+	_fileInfo = [[MFFileInfo alloc] initWithDoneSelector: nil/*@selector(makeFileviewTableActive)*/ withFrame: _fileviewTableRect];
+	
+	//Make the fileview table the active view
+	[self makeFileviewTableActive];	
 	
 	return self;
 }
@@ -103,6 +139,7 @@
 	[_fileviewCells release];
 	[_fileviewTableCol release];
 	[_fileviewTable release];
+	[_fileInfo release];
 	
 	//Communication
 	[_application release];
@@ -113,6 +150,7 @@
 	
 	//Settings
 	[_fileTypeAssociations release];
+	[_executableLaunchProgram release];
 	[_mandatoryLaunchApplication release];
 	
 	[super dealloc];
@@ -139,7 +177,13 @@
 {
 	int selectedRow = [_fileviewTable selectedRow];
 	if (selectedRow >= 0 && selectedRow < [_fileviewCellFilenames count])
-		return [self absolutePath: [_fileviewCellFilenames objectAtIndex: selectedRow]];
+	{
+		NSString* selectedPath = [_fileviewCellFilenames objectAtIndex: selectedRow];
+		if ([selectedPath isEqualToString: @".."])
+			return [[self currentDirectory] stringByAppendingPathComponent: @".."];
+		else
+			return [self absolutePath: selectedPath];
+	}
 	else
 		return nil;
 }
@@ -154,9 +198,24 @@
 	_launchExecutables;
 }
 
+- (NSString*) executableLaunchProgram;
+{
+	return _executableLaunchProgram;
+}
+
 - (BOOL) showHiddenFiles
 {
 	return _showHiddenFiles;
+}
+
+- (BOOL) showDotDotRow
+{
+	return _showDotDotRow;
+}
+
+- (BOOL) sortFiles
+{
+	return _sortFiles;
 }
 
 - (BOOL) protectSystemFiles
@@ -191,11 +250,24 @@
 	_launchExecutables = launchExecutables;
 }
 
+- (void) setExecutableLaunchProgram: (NSString*)exeLaunchAppID;
+{
+	_executableLaunchProgram = [exeLaunchAppID copy];
+}
+
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles
 {
 	_showHiddenFiles = showHiddenFiles;
-	
-	[self refreshFileView];
+}
+
+- (void) setShowDotDotRow: (BOOL)showDotDotRow
+{
+	_showDotDotRow = showDotDotRow;
+}
+
+- (void) setSortFiles: (BOOL)sortFiles
+{
+	_sortFiles = sortFiles;
 }
 
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles
@@ -223,7 +295,33 @@
 	_rowHeightBuffer = rowHeightBuffer;
 	
 	[_fileviewTable setRowHeight: _rowHeight + _rowHeightBuffer];
+}
+
+- (void) makeFileviewTableActive
+{
+	if (_activeView == _fileviewTable)
+		return;
+	
+	//Save any changes made in file info
+	[_fileInfo saveChanges];
 	[self refreshFileView];
+	
+	//Switch to fileview table
+	[self transition: 2 toView: _fileviewTable];
+	_activeView = _fileviewTable;
+}
+
+- (void) makeFileInfoActive
+{
+	if (_activeView == _fileInfo)
+		return;
+	
+	//Fill file info controls with data from current selected file	
+	[_fileInfo fillWithFile: [self currentSelectedPath]];
+	
+	//Switch to file info view
+	[self transition: 1 toView: _fileInfo];
+	_activeView = _fileInfo;
 }
 
 - (void) refreshFileView
@@ -241,16 +339,20 @@
 	_fileviewCellFilenames = [[NSMutableArray alloc] init];
 	
 	//Get the directory listing for the specified path
-	NSDirectoryEnumerator* dirEnumerator = [_fileManager enumeratorAtPath: [self currentDirectory]];
+	NSMutableArray* fileList = [[NSMutableArray alloc] initWithCapacity: 16];
+	[fileList setArray: [_fileManager directoryContentsAtPath: [self currentDirectory]]];
+	if (_sortFiles == TRUE)
+		[fileList sortUsingFunction: sortFilesByKind context: _fileManager];
+	[fileList insertObject: @".." atIndex: 0];
+	NSEnumerator* enumerator = [fileList objectEnumerator];
 	
 	//Create table cells for each file in the directory, and add them and their paths to the appropriate collections
 	NSString* filename;
-	while (filename = [dirEnumerator nextObject]) 
+	while (filename = [enumerator nextObject]) 
 	{
-		//Don't decend into directories
-		[dirEnumerator skipDescendents];	
-		
-		if (_showHiddenFiles == TRUE || [filename characterAtIndex: 0] != '.')
+		if (_showHiddenFiles == TRUE || [filename characterAtIndex: 0] != '.' ||
+			(_showDotDotRow == TRUE && [filename isEqualToString: @".."] && ![[self currentDirectory] isEqualToString: @"/"] &&
+				(![[self currentDirectory] isEqualToString: @"/Applications"] || _protectSystemFiles == FALSE)))
 		{
 			//Create table cell for filename
 			UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
@@ -347,7 +449,7 @@
 }
 
 - (void) openPath: (NSString*)path
-{
+{	
 	//Get path extension and absolute path
 	NSString* extension = [[path pathExtension] lowercaseString];
 	NSString* absolutePath = [self absolutePath: path];
@@ -388,15 +490,8 @@
 			//Launch application by the regular method
 			if (appID != nil)
 			{
-				//Let delegate know that we will launch an application
-				if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
-					[_delegate browserWillLaunchApplication: appID 
-						withArguments: nil];			
-				
 				//Launch application without arguments
-				[MSAppLauncher launchApplication: appID 
-					withLaunchingAppID: _applicationID
-					withApplication: _application];
+				[self launchApplication: appID withArgs: nil];
 			}
 		}
 	}	
@@ -406,6 +501,9 @@
 		//Refresh the fileview table
 		[self refreshFileView];
 		
+		//Make sure that the fileview table is visible
+		[self makeFileviewTableActive];
+				
 		//If moving to a path that is a parent of the last path, select the child in the current directory
 		//that is part of the last path
 		NSString* currentDirectory = [self currentDirectory];
@@ -440,32 +538,9 @@
 		if (_mandatoryLaunchApplication != nil)
 		{
 			NSLog(@"Launching with mandatory app: %@", _mandatoryLaunchApplication);
-			//Prepare arguments
-			NSArray* args = [[NSArray alloc] initWithObjects: absolutePath, nil];
-			
-			//Let delegate know that we will launch an application
-			if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
-			[_delegate browserWillLaunchApplication: _mandatoryLaunchApplication 
-				withArguments: args];
 			
 			//Launch application with file as argument
-			[MSAppLauncher launchApplication: _mandatoryLaunchApplication 
-				withArguments: args
-				withLaunchingAppID: _applicationID
-				withApplication: _application];
-			
-			//Release args
-			[args release];
-			
-			return;
-		}
-		
-		//If the file is an executable, execute it
-		if (_launchExecutables == TRUE && [_fileManager isExecutableFileAtPath: absolutePath])
-		{
-			//WARNING: This executes GUI apps, but they never return!  You have to reboot!
-			//Should only execute executables that eventually end
-			system([absolutePath fileSystemRepresentation]);
+			[self launchApplication: _mandatoryLaunchApplication withArgs: [NSArray arrayWithObjects: absolutePath, nil]];
 			
 			return;
 		}
@@ -487,27 +562,26 @@
 				{
 					NSLog(@"Launching with app: %@ arguments: %@", associationAppID, absolutePath);
 					
-					//Prepare arguments
-					NSArray* args = [[NSArray alloc] initWithObjects: absolutePath, nil];
-					
-					//Let delegate know that we will launch an application
-					if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
-						[_delegate browserWillLaunchApplication: associationAppID 
-							withArguments: args];
-
 					//Launch application with file as argument
-					[MSAppLauncher launchApplication: associationAppID 
-						withArguments: args
-						withLaunchingAppID: _applicationID
-						withApplication: _application];	
-					
-					//Release args	
-					[args release];
-					
+					[self launchApplication: associationAppID withArgs: [NSArray arrayWithObjects: absolutePath, nil]];
+										
 					return;
 				}
 			}
 		}
+		
+		//If the file is an executable, execute it
+		if (_launchExecutables == TRUE && [_fileManager isExecutableFileAtPath: absolutePath])
+		{
+			//Execute using terminal program
+			//TODO: Chooseable terminal program
+			[self launchApplication: _executableLaunchProgram withArgs: [NSArray arrayWithObjects: absolutePath, nil]];
+			
+			return;
+		}
+		
+		//File couldn't be opened by anything, so open it with the file info browser
+		[self makeFileInfoActive];
 	}
 }
 
@@ -568,21 +642,24 @@
 	}
 }
 
+- (void) changeDirectoryToLast
+{
+	if (_activeView == _fileInfo)
+		[self makeFileviewTableActive];
+	else
+	{
+		if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: NSHomeDirectory()])
+			[self changeDirectoryToApplications];
+		else if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: @"/Applications"])
+			[self changeDirectoryToApplications];
+		else
+			[self openPath: @".."];
+	}
+}
+
 - (void) changeDirectoryToRoot
 {
 	[self openPath: @"/"];
-}
-
-- (void) changeDirectoryToLast
-{
-	if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: NSHomeDirectory()])
-		[self changeDirectoryToApplications];
-	else if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: @"/Applications"])
-		[self changeDirectoryToApplications];
-	else
-	{
-		[self openPath: @"../"];
-	}
 }
 
 - (void) changeDirectoryToHome
@@ -601,6 +678,10 @@
 	if (srcPath == nil || dstPath == nil)
 		return;
 	
+	//Dont allow src operations on ".."
+	if ([[srcPath lastPathComponent] isEqualToString: @".."])
+		return;
+	
 	//Ensure absolute paths
 	NSString* absoluteSrcPath = [self absolutePath: srcPath];
 	NSString* absoluteDstPath = [self absolutePath: dstPath];
@@ -615,9 +696,7 @@
 			stringByAppendingString: [self quoteString: absoluteSrcPath]]
 			stringByAppendingString: @" "]
 			stringByAppendingString: [self quoteString: absoluteDstPath]];
-		NSLog(@"%@", moveCommand);
-		system([moveCommand UTF8String]);
-		usleep(10);	
+		[self executeSystemCommand: moveCommand withSleepTime: 50];
 	}
 	else
 	{
@@ -628,9 +707,7 @@
 			stringByAppendingString: [self quoteString: absoluteSrcPath]]
 			stringByAppendingString: @" "]
 			stringByAppendingString: [self quoteString: absoluteDstPath]];
-		NSLog(@"%@", copyCommand);
-		system([copyCommand UTF8String]);
-		usleep(10);
+		[self executeSystemCommand: copyCommand withSleepTime: 50];
 	}
 	
 	[self refreshFileView];
@@ -654,18 +731,30 @@
 
 - (void) makeDirectoryAtPath: (NSString*)path
 {
+	//Dont allow operations on ".."
+	if ([[path lastPathComponent] isEqualToString: @".."])
+		return;
+		
 	BOOL operationSuccess = [_fileManager createDirectoryAtPath: path attributes: nil];
 	[self refreshFileView];
 }
 
 - (void) makeFileAtPath: (NSString*)path
 {
+	//Dont allow operations on ".."
+	if ([[path lastPathComponent] isEqualToString: @".."])
+		return;
+		
 	BOOL operationSuccess = [_fileManager createFileAtPath: path contents: nil attributes:nil];
 	[self refreshFileView];
 }
 
 - (void) deletePath: (NSString*)path
 {
+	//Dont allow operations on ".."
+	if ([[path lastPathComponent] isEqualToString: @".."])
+		return;
+		
 	BOOL operationSuccess = [_fileManager removeFileAtPath: path handler: nil];
 	[self refreshFileView];
 }
@@ -698,12 +787,126 @@
 	//If the cell is being re-selected, open it
 	if (_lastSelectedPath != nil && [selectedAbsolutePath isEqualToString: _lastSelectedPath])
 	{
-		[self openPath: selectedAbsolutePath];
+		if ([selectedCellFilename isEqualToString: @".."])
+			[self changeDirectoryToLast];
+		else
+			[self openPath: selectedAbsolutePath];
 	}
 		
 	//Save last selected path
 	[_lastSelectedPath autorelease];
 	_lastSelectedPath = [[NSString alloc] initWithString: selectedAbsolutePath];
+}
+
+- (void) executeSystemCommand: (NSString*)command withSleepTime: (int)sleepTime
+{
+	NSLog(@"%@", command);
+	system([command UTF8String]);
+	usleep(sleepTime);
+}
+
+- (void) launchApplication: (NSString*) appID withArgs: (NSArray*)args
+{
+	//HACK: This puts args into the user's .profile so that they are executed when mobileterminal starts
+	if ([appID isEqualToString: _executableLaunchProgram])
+	{
+		//Build paths to profile, a temp profile location, and the script to be executed
+		NSString* profile = [[_application userHomeDirectory] 
+			stringByAppendingPathComponent: @".profile"];
+		NSString* tempProfile = [profile 
+			stringByAppendingPathExtension: @"tmp"];
+		NSString* mobileTerminalScript = [[[_application userLibraryDirectory] 
+			stringByAppendingPathComponent: @"MobileFinder"]
+			stringByAppendingPathComponent: @"MobileFinderProfile"];
+		
+		//Determine if the profile already exsists
+		BOOL profileExists = [_fileManager fileExistsAtPath: profile];
+				
+		//Create a copy of the user's profile
+		if (profileExists)
+		{
+			int tries = 0;
+			while ([_fileManager fileExistsAtPath: tempProfile] == FALSE)
+			{
+				NSString* moveProfileCommand = [[[@"/bin/cp " 
+					stringByAppendingString: [self quoteString: profile]]
+					stringByAppendingString: @" "]
+					stringByAppendingString: [self quoteString: tempProfile]];
+				[self executeSystemCommand: moveProfileCommand withSleepTime: 100];
+			
+				//Try this a few times if the file doesn't exist
+				if (tries > 5)
+					break;
+				tries++;
+			}
+		}
+		
+		//Add the script to the bottom of the user's profile
+		NSString* addScriptCommand = [[[@"/bin/echo "
+			stringByAppendingString: [self quoteString: [@". " stringByAppendingString: mobileTerminalScript ]]]
+			stringByAppendingString: @" >> "]
+			stringByAppendingString: profile];
+		[self executeSystemCommand: addScriptCommand withSleepTime: 20];
+		
+		//Make script to be executed
+		NSMutableData* commands = [[NSMutableData alloc] initWithCapacity: 0];
+		NSString* arg;
+		NSString* command;
+		BOOL isDirectory;
+		int i;
+		for (i = 0; i < [args count]; i++)
+		{
+			arg = [args objectAtIndex: i];
+			
+			if ([_fileManager fileExistsAtPath: arg isDirectory: &isDirectory] && isDirectory)
+				command = [[@"cd " 
+					stringByAppendingString: [self quoteString: arg]]
+					stringByAppendingString: @"\n"];				
+			else if ([_fileManager isExecutableFileAtPath: arg])
+				command = [arg stringByAppendingString: @"\n"];	
+			else
+				continue;
+			
+			[commands appendBytes: [command UTF8String] length: [command length]];
+		}
+		
+		//Add a command to either replace the user's profile after execution, or remove the profile if none existed
+		NSString* cleanupProfileCommand;
+		if (profileExists)
+			cleanupProfileCommand = [[[[@"/bin/mv " 
+			stringByAppendingString: [self quoteString: tempProfile]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [self quoteString: profile]]
+			stringByAppendingString: @"\n"];
+		else
+			cleanupProfileCommand = [[@"/bin/rm " 
+			stringByAppendingString: [self quoteString: profile]]
+			stringByAppendingString: @"\n"];
+			
+		[commands appendBytes: [cleanupProfileCommand UTF8String] length: [cleanupProfileCommand length]];
+		
+		//Write the script
+		[commands writeToFile: mobileTerminalScript atomically: YES];
+	}
+	
+	//Let delegate know that we will launch an application
+	if ([_delegate respondsToSelector: @selector(browserWillLaunchApplication:withArguments:)])
+		[_delegate browserWillLaunchApplication: appID withArguments: args];
+	
+	//Launch the application
+	if (args == nil)
+	{
+		[MSAppLauncher launchApplication: appID 
+			withLaunchingAppID: _applicationID
+			withApplication: _application];
+	}
+	else
+	{
+		[MSAppLauncher launchApplication: appID 
+			withArguments: args
+			withLaunchingAppID: _applicationID
+			withApplication: _application];
+	}
 }
 
 /*

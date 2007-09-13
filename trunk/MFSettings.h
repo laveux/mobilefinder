@@ -49,6 +49,8 @@
 	UIPreferencesTextTableCell* _startupDirCell;
 	UIPreferencesTableCell* _startupInLastPathCell;
 	UIPreferencesTableCell* _showHiddenFilesCell;
+	UIPreferencesTableCell* _showDotDotCell;
+	UIPreferencesTableCell* _sortFilesCell;
 	UIPreferencesTableCell* _launchApplicationsCell;
 	UIPreferencesTableCell* _launchExecutablesCell;
 	UIPreferencesTableCell* _protectSystemFilesCell;
@@ -64,6 +66,8 @@
 	
 	UISwitchControl* _startupInLastPathSwitch;
 	UISwitchControl* _showHiddenFilesSwitch;
+	UISwitchControl* _showDotDotSwitch;
+	UISwitchControl* _sortFilesSwitch;
 	UISwitchControl* _launchApplicationsSwitch;
 	UISwitchControl* _launchExecutablesSwitch;
 	UISwitchControl* _protectSystemFilesSwitch;
@@ -89,6 +93,8 @@
 - (NSString*) startupPath;
 - (BOOL) startupInLastPath;
 - (BOOL) showHiddenFiles;
+- (BOOL) showDotDot;
+- (BOOL) sortFiles;
 - (BOOL) launchApplications;
 - (BOOL) launchExecutables;
 - (BOOL) protectSystemFiles;
@@ -103,6 +109,8 @@
 - (void) setStartupPath: (NSString*)startupPath;
 - (void) setStartupInLastPath: (BOOL)startupInLastPath;
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
+- (void) setShowDotDot: (BOOL)showDotDot;
+- (void) setSortFiles: (BOOL)sortFiles;
 - (void) setLaunchApplications: (BOOL)launchApplications;
 - (void) setLaunchExecutables: (BOOL)launchExecutables;
 - (void) setProtectSystemFiles: (BOOL)protectSystemFiles;

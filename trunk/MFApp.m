@@ -105,10 +105,8 @@ typedef struct __GSEvent
 	//Setup the settings pane (and load settings)
 	_settings = [[MFSettings alloc] initWithFrame: viewRect	withSettingsPath: _settingsPath	withMFApp: self];
 	[_settings setDelegate: self];
+	[_settings readSettings];
 	
-	//Setup the file info viewer
-	_fileInfo = [[MFFileInfo alloc] initWithFrame: viewRect];
-		
 	//Setup the file browser
 	_browser = [[MFBrowser alloc] initWithApplication: self withAppID: _applicationID withFrame: viewRect];
 	[_browser setDelegate: self];
@@ -133,7 +131,6 @@ typedef struct __GSEvent
 	[_contentView release];
 	[_mainView release];
 	[_browser release];
-	[_fileInfo release];
 	[_settings release];
 	[_navBar release];
 	[_backButton release];
@@ -423,13 +420,7 @@ typedef struct __GSEvent
 
 - (void) backButtonPressed
 {
-	if (_activeView == _browser)
-		[_browser changeDirectoryToLast];
-	else if (_activeView == _fileInfo)
-	{
-		//Simulate a press of the info button to switch back to the browser
-		[self infoButtonPressed];
-	}
+	[_browser changeDirectoryToLast];	
 }
 
 - (void) trashButtonPressed
@@ -449,6 +440,8 @@ typedef struct __GSEvent
 		
 	//Update settings
 	[_browser setShowHiddenFiles: [_settings showHiddenFiles]];
+	[_browser setShowDotDotRow: [_settings showDotDot]];
+	[_browser setSortFiles: [_settings sortFiles]];
 	[_browser setLaunchApplications: [_settings launchApplications]];
 	[_browser setLaunchExecutables: [_settings launchExecutables]];
 	[_browser setProtectSystemFiles: [_settings protectSystemFiles]];
@@ -459,17 +452,6 @@ typedef struct __GSEvent
 	//Update views, buttons and bars
 	[_mainView transition: 2 toView: _browser];
 	_activeView = _browser;
-	[self applyStyles];
-}
-
-- (void) makeFileInfoActive
-{
-	if (_activeView == _fileInfo)
-		return;
-		
-	//Update views, buttons and bars
-	[_mainView transition: 1 toView: _fileInfo];
-	_activeView = _fileInfo;
 	[self applyStyles];
 }
 
@@ -502,23 +484,6 @@ typedef struct __GSEvent
 		
 		//Set fileOp bar state
 		[self resetFileOpButtons];
-	}
-	else if (_activeView == _fileInfo)
-	{
-		//Set navBar state
-		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_backButton setEnabled: TRUE];
-		[_trashButton setEnabled: FALSE];
-		[_homeButton setEnabled: FALSE];
-		
-		//Set fileOp bar state
-		[_deleteButton setEnabled: FALSE];
-		[_moveButton setEnabled: FALSE];
-		[_copyButton setEnabled: FALSE];
-		[_newButton setEnabled: FALSE];
-		[_infoButton setTitle: @"Done"];
-		[_infoButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 	}
 	else if (_activeView == _settings)
 	{
@@ -729,14 +694,7 @@ typedef struct __GSEvent
 {
 	if ([[_infoButton title] isEqualToString: @"Info"] && [_browser currentSelectedPath] != nil)
 	{
-		[_fileInfo fillWithFile: [_browser currentSelectedPath]];
-		[self makeFileInfoActive];
-	}
-	else// if ([[_infoButton title] isEqualToString: @"Done"] && [_browser currentSelectedPath] != nil)
-	{
-		[_fileInfo saveChanges];
-		[self resetFileOpButtons];
-		[self makeBrowserActive];
+		[_browser makeFileInfoActive];
 	}
 }
 

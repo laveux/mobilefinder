@@ -54,7 +54,7 @@
 #define allWriteMask 0x0002
 #define allExecuteMask 0x0001
 
-- (id) initWithFrame: (struct CGRect)frame
+- (id) initWithDoneSelector: (SEL)doneSelector withFrame: (struct CGRect)frame;
 {
 	//Init view with frame rect
 	self = [super initWithFrame: frame];
@@ -84,6 +84,17 @@
 	_attributesGroup = [[UIPreferencesTableCell alloc] init];
 	[_attributesGroup setTitle: @"File Attributes"];
 	[_attributesGroup setIcon: [UIImage applicationImageNamed: @"Finder_32x32.png"]];	
+	_doneButtonSelector = doneSelector;
+	if (_doneButtonSelector != nil)
+	{
+		_doneButton = [[UINavBarButton alloc] initWithFrame: buttonRect];
+		[_doneButton setAutosizesToFit: FALSE];
+		[_doneButton setNavBarButtonStyle: 0];
+		[_doneButton setTitle: @"Done"];
+		[_doneButton addTarget: self action: @selector(doneButtonPressed) forEvents: 1];
+		[_attributesGroup addSubview: _doneButton];
+	}
+	
 	_filenameCell = [[UIPreferencesTextTableCell alloc] init];	
 	[_filenameCell setTitle: @"Filename"];
 	[_filenameCell setReturnAction: @selector(saveChanges)];
@@ -183,6 +194,7 @@
 	[_fileInfoGroup release];
 	[_fileInfoCell release];
 	
+	[_doneButton release];
 	[_ownerAttribReadButton release];
 	[_ownerAttribWriteButton release];
 	[_ownerAttribExecuteButton release];
@@ -358,6 +370,12 @@
 	[self fillWithFile: _absolutePath];
 }
 
+- (void) doneButtonPressed
+{
+	if ([[self superview] respondsToSelector: _doneButtonSelector])
+		[[self superview] performSelector: _doneButtonSelector];
+}
+
 - (void) buttonPressed: (UINavBarButton*)button
 {
 	if (button == _ownerAttribReadButton)
@@ -479,6 +497,7 @@
 	}
 }
 
+/*
 //These Methods track delegate calls made to the application
 - (NSMethodSignature*)methodSignatureForSelector:(SEL)selector 
 {
@@ -497,5 +516,6 @@
 	NSLog(@"Called from: %@", NSStringFromSelector([anInvocation selector]));
 	[super forwardInvocation:anInvocation];
 }
+*/
 
 @end
