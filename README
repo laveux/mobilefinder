@@ -6,9 +6,11 @@ Begun: Aug/10/2007
 Thanks: iPhone Dev Team
 Compilation Toolchain and Hello World Applicaiton
 
-Thanks: nickbwheat for the icon. (I give! Full square face it is!)
+Thanks: Apple for most icons. (If you are an Apple employee and know that this isn't OK, let me know!)
+Thanks: nickbwheat for the app icon. (I give! Full square face it is!)
 Thanks: rSBT.app dev team for unknown application icon.
 
+GNU General Public License - version 2
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; version 2
@@ -23,12 +25,14 @@ Thanks: rSBT.app dev team for unknown application icon.
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-Install Instructions:
+Manual Install Instructions:
+
 1. Jailbreak iPhone and install /bin/cp, /bin/mv, and ssh/sftp (see http://iphone.fiveforty.net/wiki/index.php/How_to_Escape_Jail)
 2. Put Finder.app into /Applications on your iPhone using an sftp program (Cyberduck)
 3. Reboot your iPhone
 
 Compiling From Sources (Optional!)
+
 1. Install iPhone Toolchain (see http://iphone.fiveforty.net/wiki/index.php/Toolchain_Project)
 2. Download sources:
 	svn checkout http://mobilefinder.googlecode.com/svn/trunk/ mobilefinder
@@ -45,4 +49,4 @@ Compiling From Sources (Optional!)
 
 Bug List:
 * Preference group titles change position when the scrolling table is pushed beyond the top or bottom
-* Keyboard to set preferences doesn't disapear
+* Keyboard to set preferences doesn't dissappear

@@ -30,15 +30,18 @@
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <UIKit/UIView.h>
+#import <UIKit/UITransitionView.h>
 #import <UIKit/UIPreferencesTable.h>
 #import <UIKit/UIPreferencesTableCell.h>
 #import <UIKit/UIPreferencesTextTableCell.h>
 #import <UIKit/UINavBarButton.h>
 #import <UIKit/UITextLabel.h>
+#import "MFAppSelector.h"
 
-@interface MFFileInfo : UIView
+@interface MFFileInfo : UITransitionView
 {
 	UIPreferencesTable* _infoTable;
+	MFAppSelector* _appSelector;
 	
 	UIPreferencesTableCell* _attributesGroup;
 	UIPreferencesTextTableCell* _filenameCell;

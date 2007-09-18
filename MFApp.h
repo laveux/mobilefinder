@@ -48,7 +48,7 @@
 	UINavBarButton* _backButton;
 	UINavBarButton* _finderButton;
 	UINavBarButton* _settingsButton;
-	UINavBarButton* _trashButton;
+	UINavBarButton* _appleButton;
 	UINavBarButton* _homeButton;
 	
 	CGRect _fileOpBarFrame;
@@ -61,6 +61,7 @@
 	
 	NSString* _appLibraryPath;
 	NSString* _settingsPath;
+	NSString* _bookmarksPath;
 	NSString* _trashPath;
 	NSString* _pathSelectedForFileOp;
 }
@@ -72,11 +73,12 @@
 - (void) createNavigationBar;
 - (void) createFileOpBar;
 - (void) backButtonPressed;
-- (void) trashButtonPressed;
+- (void) appleButtonPressed;
 - (void) homeButtonPressed;
 - (void) makeBrowserActive;
 - (void) makeSettingsActive;
 - (void) applyStyles;
+- (void) updateBackButton;
 - (void) updatePrompt;
 - (void) resetFileOpButtons;
 - (void) copyButtonPressed;
