@@ -42,7 +42,7 @@
 #import <UIKit/UIKeyboard.h>
 #import "MFFileInfo.h"
 
-@implementation MFFileInfo : UIView
+@implementation MFFileInfo : UITransitionView
 
 #define ownerReadMask 0x0100
 #define ownerWriteMask 0x0080
@@ -174,9 +174,15 @@
 	
 	//Fill controls with data for root path
 	[self fillWithFile: @"/"];
+		
+	//Create app selector
+	//_appSelector = [[MFAppSelector alloc] initWithFrame: CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height)];
+	//[_appSelector setTarget: [self superview] selector: @selector(launchApplication:withArgs:)];
 	
-	//Put info table into file info pane
-	[self addSubview: _infoTable];
+	//Put info table into file info pane	
+	[self transition: 2 toView: _infoTable];
+	//_activeView = _infoTable;
+	//[self transition: 2 toView: _appSelector];
 	
 	return self;
 }

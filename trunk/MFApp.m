@@ -72,6 +72,9 @@ typedef struct __GSEvent
 	_trashPath = [_appLibraryPath 
 		stringByAppendingPathComponent: @"Trash"];
 	[_trashPath retain];
+	_bookmarksPath = [_appLibraryPath 
+		stringByAppendingPathComponent: @"Bookmarks"];
+	[_bookmarksPath retain];
 	_settingsPath = [[[[self userLibraryDirectory]
 		stringByAppendingPathComponent: @"Preferences"]
 		stringByAppendingPathComponent: _applicationID]
@@ -81,6 +84,7 @@ typedef struct __GSEvent
 	//Ensure library directories exsist
 	[[NSFileManager defaultManager] createDirectoryAtPath: _appLibraryPath attributes: nil];
 	[[NSFileManager defaultManager] createDirectoryAtPath: _trashPath attributes: nil];
+	[[NSFileManager defaultManager] createDirectoryAtPath: _bookmarksPath attributes: nil];
 	
 	//Setup content view
     struct CGRect screenRect = [UIHardware fullScreenApplicationContentRect];
@@ -149,6 +153,7 @@ typedef struct __GSEvent
 	[_launchingApplicationID release];
 	[_appLibraryPath release];
 	[_settingsPath release];
+	[_bookmarksPath release];
 	[_trashPath release];
 	[_pathSelectedForFileOp release];
 	
@@ -250,7 +255,7 @@ typedef struct __GSEvent
 	float navBarSideButtonBuffer = 4.0f;
 	float navBarButtonBuffer = 4.0f;
 	float backButtonWidth = 52.0f;
-	float trashButtonWidth = 32.0f;
+	float appleButtonWidth = 32.0f;
 	float homeButtonWidth = 32.0f;
 	float finderButtonWidth = 68.0f;
 	float settingsButtonWidth = 68.0f;
@@ -298,17 +303,17 @@ typedef struct __GSEvent
 	[_settingsButton addTarget: self action: @selector(makeSettingsActive) forEvents: 1];
 	[_navBar addSubview: _settingsButton];	
 	
-	_trashButton = [_navBar createButtonWithContents: [NSString stringWithUTF8String: "\uf8ff"]
-		width: trashButtonWidth 
+	_appleButton = [_navBar createButtonWithContents: [NSString stringWithUTF8String: "\uf8ff"]
+		width: appleButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
-	[_trashButton setFrame: CGRectMake(
-		_navBarFrame.size.width - homeButtonWidth - navBarButtonBuffer - trashButtonWidth - navBarSideButtonBuffer,
+	[_appleButton setFrame: CGRectMake(
+		_navBarFrame.size.width - homeButtonWidth - navBarButtonBuffer - appleButtonWidth - navBarSideButtonBuffer,
 		_navBarFrame.size.height - navBarButtonHeight - navBarSouthBuffer, 
-		trashButtonWidth, navBarButtonHeight)];
-	[_trashButton addTarget: self action: @selector(trashButtonPressed) forEvents: 1];
-	[_navBar addSubview: _trashButton];
+		appleButtonWidth, navBarButtonHeight)];
+	[_appleButton addTarget: self action: @selector(appleButtonPressed) forEvents: 1];
+	[_navBar addSubview: _appleButton];
 	
 	_homeButton = [_navBar createButtonWithContents: @"~" 
 		width: homeButtonWidth 
@@ -331,13 +336,13 @@ typedef struct __GSEvent
 	//Control sizes
 	float fileOpBarNorthBuffer = 8.0f;
 	float fileOpBarButtonHeight = 32.0f;
-	float fileOpBarButtonBuffer = 2.0f;
-	float fileOpBarButtonGroupBuffer = 4.0f;
-	float moveButtonWidth = 60.0f;
-	float copyButtonWidth = 60.0f;
-	float deleteButtonWidth = 60.0f;
-	float infoButtonWidth = 60.0f;
-	float newButtonWidth = 60.0f;
+	float fileOpBarButtonBuffer = 1.0f;
+	float fileOpBarButtonGroupBuffer = 0.0f;
+	float moveButtonWidth = 59.0f;
+	float copyButtonWidth = 59.0f;
+	float deleteButtonWidth = 80.0f;
+	float infoButtonWidth = 59.0f;
+	float newButtonWidth = 59.0f;
 	
 	//Setup file operations bar
 	[_fileOpBar release];
@@ -420,12 +425,17 @@ typedef struct __GSEvent
 
 - (void) backButtonPressed
 {
-	[_browser changeDirectoryToLast];	
+	if (_activeView == _browser)
+		[_browser changeDirectoryToLast];
+	else //if (_activeView == _settings)
+		[self makeBrowserActive];
+	
+	[self updateBackButton];
 }
 
-- (void) trashButtonPressed
+- (void) appleButtonPressed
 {
-	[_browser openPath: _trashPath];
+	[_browser openPath: _appLibraryPath];
 }
 
 - (void) homeButtonPressed
@@ -444,10 +454,11 @@ typedef struct __GSEvent
 	[_browser setSortFiles: [_settings sortFiles]];
 	[_browser setLaunchApplications: [_settings launchApplications]];
 	[_browser setLaunchExecutables: [_settings launchExecutables]];
-	[_browser setProtectSystemFiles: [_settings protectSystemFiles]];
+	[_browser setSystemFileAccess: [_settings systemFileAccess]];
 	[_browser setFileTypeAssociations: [_settings fileTypeAssociations]];
 	//TODO: Buffer height setting or constant
 	[_browser setRowHeight: (float)[_settings browserRowHeight] bufferHeight: 4.0f];
+	[_browser refreshFileView];
 	
 	//Update views, buttons and bars
 	[_mainView transition: 2 toView: _browser];
@@ -478,20 +489,23 @@ typedef struct __GSEvent
 		//Set navBar state
 		[_finderButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_backButton setEnabled: TRUE];
-		[_trashButton setEnabled: TRUE];
+		[self updateBackButton];
+		[_appleButton setEnabled: TRUE];
 		[_homeButton setEnabled: TRUE];
 		
 		//Set fileOp bar state
 		[self resetFileOpButtons];
+		
+		//Update prompt
+		[self updatePrompt];
 	}
 	else if (_activeView == _settings)
 	{
 		//Set navBar state
 		[_finderButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
 		[_settingsButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_backButton setEnabled: FALSE];
-		[_trashButton setEnabled: FALSE];
+		[self updateBackButton];
+		[_appleButton setEnabled: FALSE];
 		[_homeButton setEnabled: FALSE];
 		
 		//Set fileOp bar state
@@ -501,6 +515,28 @@ typedef struct __GSEvent
 		[_copyButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
 		[_infoButton setEnabled: FALSE];
+		
+		//Set prompt title for settings
+		[_navBar setPrompt: @"Settings"];
+	}
+}
+
+- (void) updateBackButton
+{
+	if (_activeView == _browser)
+	{
+		[_backButton setTitle: @"Up"];
+		if ([[_browser currentDirectory] isEqualToString: @"/"] ||
+			([_settings systemFileAccess] == FALSE && [[_browser currentDirectory] isEqualToString: @"/Applications"]))
+		{
+			[_backButton setEnabled: FALSE];
+		}
+		else
+			[_backButton setEnabled: TRUE];
+	}
+	else //if (_activeView == _settings)
+	{
+		[_backButton setTitle: @"Back"];
 	}
 }
 
@@ -509,7 +545,14 @@ typedef struct __GSEvent
 	//Update nav bar prompt to reflect directory
 	NSString* prompt;
 	if (_launchingApplicationID == nil)
-		prompt = [[_browser currentDirectory] stringByAbbreviatingWithTildeInPath];
+	{
+		NSString* currentDirectory = [_browser currentDirectory];
+		
+		if ([_settings systemFileAccess] == FALSE && [currentDirectory isEqualToString: @"/Applications"])
+			prompt = @"Applications - Enable System Access for /";
+		else
+			prompt = [currentDirectory stringByAbbreviatingWithTildeInPath];
+	}
 	else
 	{
 		prompt = [[[NSString string] 
@@ -564,7 +607,7 @@ typedef struct __GSEvent
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Cancel"];
 		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_moveButton setTitle: @"Copy"];
+		[_moveButton setTitle: @"Paste"];
 		[_deleteButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
 		[_infoButton setEnabled: FALSE];
@@ -572,12 +615,12 @@ typedef struct __GSEvent
 		[_pathSelectedForFileOp autorelease];
 		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
 	}
-	else if ([[_copyButton title] isEqualToString: @"Move"])
+	else if ([[_copyButton title] isEqualToString: @"Paste"])
 	{
 		[_browser 
 			sendSrcPath: _pathSelectedForFileOp 
 			toDstPath: [_browser currentDirectory]
-			byMoving: TRUE];
+			byFileOp: MFMoveFile];
 		[self resetFileOpButtons];
 	}
 	else if ([[_copyButton title] isEqualToString: @"Delete"])
@@ -589,6 +632,9 @@ typedef struct __GSEvent
 				[_browser deletePath: currentSelectedPath];
 			else
 			{
+				//Ensure that the trash exists
+				[_browser makeDirectoryAtPath: _trashPath];
+				
 				//Make path for destination in trash
 				NSString* trashedPathPath = [_trashPath stringByAppendingPathComponent: [currentSelectedPath lastPathComponent]];
 				
@@ -597,10 +643,12 @@ typedef struct __GSEvent
 				{
 					trashedPathPath = [trashedPathPath stringByAppendingString: @"_RemoveMe"];
 				}
+				
+				//Send file to trash
 				[_browser 
 					sendSrcPath: currentSelectedPath 
 					toDstPath: trashedPathPath
-					byMoving: TRUE];
+					byFileOp: MFMoveFile];
 			}
 		}
 		[self resetFileOpButtons];
@@ -624,7 +672,7 @@ typedef struct __GSEvent
 		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_moveButton setTitle: @"Cancel"];
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_copyButton setTitle: @"Move"];
+		[_copyButton setTitle: @"Paste"];
 		[_deleteButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
 		[_infoButton setEnabled: FALSE];
@@ -632,12 +680,12 @@ typedef struct __GSEvent
 		[_pathSelectedForFileOp autorelease];
 		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
 	}
-	else if ([[_moveButton title] isEqualToString: @"Copy"])
+	else if ([[_moveButton title] isEqualToString: @"Paste"])
 	{
 		[_browser 
 			sendSrcPath: _pathSelectedForFileOp 
 			toDstPath: [_browser currentDirectory]
-			byMoving: FALSE];
+			byFileOp: MFCopyFile];
 		[self resetFileOpButtons];
 	}
 	else if ([[_moveButton title] isEqualToString: @"Folder"])
@@ -664,6 +712,27 @@ typedef struct __GSEvent
 		[_newButton setEnabled: FALSE];
 		[_infoButton setEnabled: FALSE];
 	}
+	else if ([[_deleteButton title] isEqualToString: @"Bookmark"] && [_browser currentSelectedPath] != nil)
+	{
+		[self resetFileOpButtons];
+		
+		//Ensure that the trash exists
+		[_browser makeDirectoryAtPath: _bookmarksPath];
+				
+		//Build paths for link
+		NSString* currentSelectedPath = [_browser currentSelectedPath];
+		NSString* destPath = [_bookmarksPath stringByAppendingPathComponent: [currentSelectedPath lastPathComponent]];		
+		while ([[NSFileManager defaultManager] fileExistsAtPath: destPath])
+		{
+			destPath = [destPath stringByAppendingString: @"_2"];
+		}
+		
+		//Create link
+		[_browser 
+			sendSrcPath: currentSelectedPath 
+			toDstPath: destPath
+			byFileOp: MFLinkFile];
+	}
 	else
 	{
 		[self resetFileOpButtons];
@@ -675,14 +744,22 @@ typedef struct __GSEvent
 	if ([[_newButton title] isEqualToString: @"New"])
 	{
 		[self resetFileOpButtons];
-		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_moveButton setTitle: @"Folder"];
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"File"];
-		[_deleteButton setEnabled: FALSE];
-		[_infoButton setEnabled: FALSE];
+		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_moveButton setTitle: @"Folder"];
+		if ([_browser currentSelectedPath] != nil)
+		{
+			[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+			[_deleteButton setTitle: @"Bookmark"];
+		}
+		else
+		{
+			[_deleteButton setEnabled: FALSE];
+		}
 		[_newButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_newButton setTitle: @"Cancel"];
+		[_infoButton setEnabled: FALSE];
 	}
 	else
 	{
@@ -695,11 +772,13 @@ typedef struct __GSEvent
 	if ([[_infoButton title] isEqualToString: @"Info"] && [_browser currentSelectedPath] != nil)
 	{
 		[_browser makeFileInfoActive];
+		[_backButton setEnabled: TRUE];
 	}
 }
 
 - (void) browserCurrentDirectoryChanged: (MFBrowser*)browser toPath: (NSString*)path;
 {
+	[self updateBackButton];	
 	[self updatePrompt];
 }
 
@@ -837,6 +916,7 @@ typedef struct __GSEvent
 
 
 //These Methods track delegate calls made to the application
+/*
 - (NSMethodSignature*)methodSignatureForSelector:(SEL)selector 
 {
 	NSLog(@"Requested method for selector: %@", NSStringFromSelector(selector));
@@ -854,7 +934,7 @@ typedef struct __GSEvent
 	NSLog(@"Called from: %@", NSStringFromSelector([anInvocation selector]));
 	[super forwardInvocation:anInvocation];
 }
-
+*/
 
 
 

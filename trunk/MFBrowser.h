@@ -38,6 +38,13 @@
 #import <UIKit/UITextView.h>
 #import "MFFileInfo.h"
 
+enum MFFileOp
+{
+	MFMoveFile = 0,
+	MFCopyFile,
+	MFLinkFile
+};
+
 @interface MFBrowser : UITransitionView
 {
 	//UI elements
@@ -63,7 +70,7 @@
 	BOOL _sortFiles;
 	BOOL _launchApplications;
 	BOOL _launchExecutables;
-	BOOL _protectSystemFiles;
+	BOOL _systemFileAccess;
 	NSArray* _fileTypeAssociations;
 	NSString* _executableLaunchProgram;
 	NSString* _mandatoryLaunchApplication;
@@ -81,7 +88,7 @@
 - (BOOL) showHiddenFiles;
 - (BOOL) showDotDotRow;
 - (BOOL) sortFiles;
-- (BOOL) protectSystemFiles;
+- (BOOL) systemFileAccess;
 - (NSArray*) fileTypeAssociations;
 - (NSString*) mandatoryLaunchApplication;
 - (void) setDelegate: (id)delegate;
@@ -91,7 +98,7 @@
 - (void) setShowHiddenFiles: (BOOL)showHiddenFiles;
 - (void) setShowDotDotRow: (BOOL)showDotDotRow;
 - (void) setSortFiles: (BOOL)sortFiles;
-- (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
+- (void) setSystemFileAccess: (BOOL)systemFileAccess;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) setMandatoryLaunchApplication: (NSString*)appID;
 - (void) setRowHeight: (int)rowHeight bufferHeight: (int)rowHeightBuffer;
@@ -106,7 +113,7 @@
 - (void) changeDirectoryToRoot;
 - (void) changeDirectoryToHome;
 - (void) changeDirectoryToApplications;
-- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
+- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byFileOp: (int)fileOp;
 - (NSString*) quoteString: (NSString*)string;
 - (void) makeDirectoryAtPath: (NSString*)path;
 - (void) makeFileAtPath: (NSString*)path;

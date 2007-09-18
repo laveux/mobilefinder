@@ -100,10 +100,10 @@
 	[_launchExecutablesCell setTitle: @"Executable Launch"];
 	_launchExecutablesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
 	[_launchExecutablesCell addSubview: _launchExecutablesSwitch];
-	_protectSystemFilesCell = [[UIPreferencesTableCell alloc] init];
-	[_protectSystemFilesCell setTitle: @"Protect System Files"];
-	_protectSystemFilesSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
-	[_protectSystemFilesCell addSubview: _protectSystemFilesSwitch];
+	_systemFileAccessCell = [[UIPreferencesTableCell alloc] init];
+	[_systemFileAccessCell setTitle: @"System File Access"];
+	_systemFileAccessSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
+	[_systemFileAccessCell addSubview: _systemFileAccessSwitch];
 	_closeAppCell = [[UIPreferencesTableCell alloc] init];
 	[_closeAppCell setTitle: @"Close Finder Completely"];
 	_closeAppButton = [[UINavBarButton alloc] initWithFrame: buttonRect];
@@ -184,7 +184,7 @@
 	[_showDotDotCell release];
 	[_sortFilesCell release];
 	[_launchApplicationsCell release];
-	[_protectSystemFilesCell release];	
+	[_systemFileAccessCell release];	
 	[_closeAppCell release];
 	
 	[_associationsGroup release];
@@ -201,7 +201,7 @@
 	[_sortFilesSwitch release];
 	[_launchApplicationsSwitch release];
 	[_launchExecutablesSwitch release];
-	[_protectSystemFilesSwitch release];
+	[_systemFileAccessSwitch release];
 	[_closeAppButton release];
 	[_browserRowHeightSlider release];
 	[_buttonStyleBlueButton release];
@@ -263,9 +263,9 @@
 	return [_launchExecutablesSwitch value] != 0;
 }
 
-- (BOOL) protectSystemFiles
+- (BOOL) systemFileAccess
 {
-	return [_protectSystemFilesSwitch value] != 0;
+	return [_systemFileAccessSwitch value] != 0;
 }
 
 - (int) browserRowHeight
@@ -370,9 +370,9 @@
 	[_launchExecutablesSwitch setValue: (launchExecutables == TRUE ? 1 : 0)];
 }
 
-- (void) setProtectSystemFiles: (BOOL)protectSystemFiles
+- (void) setSystemFileAccess: (BOOL)systemFileAccess
 {
-	[_protectSystemFilesSwitch setValue: (protectSystemFiles == TRUE ? 1 : 0)];
+	[_systemFileAccessSwitch setValue: (systemFileAccess == TRUE ? 1 : 0)];
 }
 
 - (void) setBrowserRowHeight: (int)value
@@ -457,7 +457,7 @@
 	[self setSortFiles: TRUE];
 	[self setLaunchApplications: TRUE];
 	[self setLaunchExecutables: FALSE];
-	[self setProtectSystemFiles: TRUE];
+	[self setSystemFileAccess: TRUE];
 	[self setBrowserRowHeight: 48];
 	[self setButtonStyleBlue];
 	[self setBarStyleBlue];	
@@ -509,9 +509,9 @@
 			{
 				[self setLaunchExecutables: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
-			else if ([currKey isEqualToString: @"MFProtectSystemFiles"])
+			else if ([currKey isEqualToString: @"MFSystemFileAccess"])
 			{
-				[self setProtectSystemFiles: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
+				[self setSystemFileAccess: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
 			}
 			else if ([currKey isEqualToString: @"MFBrowserRowHeight"])
 			{
@@ -589,7 +589,7 @@
 	NSString* sortFilesValue = [self sortFiles] == FALSE ? @"0" : @"1";
 	NSString* launchApplicationsValue = [self launchApplications] == FALSE ? @"0" : @"1";
 	NSString* launchExecutablesValue = [self launchExecutables] == FALSE ? @"0" : @"1";
-	NSString* protectSystemFilesValue = [self protectSystemFiles] == FALSE ? @"0" : @"1";
+	NSString* systemFileAccessValue = [self systemFileAccess] == FALSE ? @"0" : @"1";
 	NSString* browserRowHeight = [[NSNumber numberWithInt: [self browserRowHeight]] stringValue];
 	NSString* buttonInactiveStyle = [[NSNumber numberWithInt: [self buttonInactiveStyle]] stringValue];
 	NSString* buttonActiveStyle = [[NSNumber numberWithInt: [self buttonActiveStyle]] stringValue];
@@ -608,7 +608,7 @@
 		sortFilesValue, @"MFSortFiles",
 		launchApplicationsValue, @"MFLaunchApplications",
 		launchExecutablesValue, @"MFLaunchExecutables",
-		protectSystemFilesValue, @"MFProtectSystemFiles",
+		systemFileAccessValue, @"MFSystemFileAccess",
 		browserRowHeight, @"MFBrowserRowHeight",
 		buttonInactiveStyle, @"MFButtonInactiveStyle",
 		buttonActiveStyle, @"MFButtonActiveStyle",
@@ -710,7 +710,7 @@
 				case 4: return _sortFilesCell;
 				case 5: return _launchApplicationsCell;
 				case 6: return _launchExecutablesCell;
-				case 7: return _protectSystemFilesCell;
+				case 7: return _systemFileAccessCell;
 				case 8: return _closeAppCell;
 			}
 		case 2: return _appearenceGroup;

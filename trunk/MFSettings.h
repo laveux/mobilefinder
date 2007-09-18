@@ -53,7 +53,7 @@
 	UIPreferencesTableCell* _sortFilesCell;
 	UIPreferencesTableCell* _launchApplicationsCell;
 	UIPreferencesTableCell* _launchExecutablesCell;
-	UIPreferencesTableCell* _protectSystemFilesCell;
+	UIPreferencesTableCell* _systemFileAccessCell;
 	UIPreferencesTableCell* _closeAppCell;
 	
 	UIPreferencesTableCell* _appearenceGroup;
@@ -70,7 +70,7 @@
 	UISwitchControl* _sortFilesSwitch;
 	UISwitchControl* _launchApplicationsSwitch;
 	UISwitchControl* _launchExecutablesSwitch;
-	UISwitchControl* _protectSystemFilesSwitch;
+	UISwitchControl* _systemFileAccessSwitch;
 	UISliderControl* _browserRowHeightSlider;
 	UINavBarButton* _closeAppButton;
 	UINavBarButton* _buttonStyleBlueButton;
@@ -97,7 +97,7 @@
 - (BOOL) sortFiles;
 - (BOOL) launchApplications;
 - (BOOL) launchExecutables;
-- (BOOL) protectSystemFiles;
+- (BOOL) systemFileAccess;
 - (int) browserRowHeight;
 - (int) buttonInactiveStyle;
 - (int) buttonActiveStyle;
@@ -113,7 +113,7 @@
 - (void) setSortFiles: (BOOL)sortFiles;
 - (void) setLaunchApplications: (BOOL)launchApplications;
 - (void) setLaunchExecutables: (BOOL)launchExecutables;
-- (void) setProtectSystemFiles: (BOOL)protectSystemFiles;
+- (void) setSystemFileAccess: (BOOL)systemFileAccess;
 - (void) setBrowserRowHeight: (int)value;
 - (void) setButtonInactiveStyle: (int)style;
 - (void) setButtonActiveStyle: (int)style;

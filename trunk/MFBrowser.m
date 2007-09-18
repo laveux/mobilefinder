@@ -105,7 +105,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	_sortFiles = TRUE;
 	_launchApplications = TRUE;
 	_launchExecutables = TRUE;
-	_protectSystemFiles = TRUE;
+	_systemFileAccess = FALSE;
 	_fileTypeAssociations = nil;
 	_executableLaunchProgram = @"com.googlecode.mobileterminal.Term-vt100";
 	_mandatoryLaunchApplication = nil;
@@ -121,7 +121,6 @@ int sortFilesByKind(id obj1, id obj2, void* context)
     [_fileviewTable setDataSource: self];
     [_fileviewTable setDelegate: self];
 	[_fileviewTable setResusesTableCells: FALSE];
-	[_fileviewTable reloadData];
 	
 	//Setup the file info viewer
 	_fileInfo = [[MFFileInfo alloc] initWithDoneSelector: nil/*@selector(makeFileviewTableActive)*/ withFrame: _fileviewTableRect];
@@ -218,9 +217,9 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	return _sortFiles;
 }
 
-- (BOOL) protectSystemFiles
+- (BOOL) systemFileAccess
 {
-	return _protectSystemFiles;
+	return _systemFileAccess;
 }
 
 - (NSArray*) fileTypeAssociations
@@ -270,9 +269,9 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	_sortFiles = sortFiles;
 }
 
-- (void) setProtectSystemFiles: (BOOL)protectSystemFiles
+- (void) setSystemFileAccess: (BOOL)systemFileAccess
 {
-	_protectSystemFiles = protectSystemFiles;
+	_systemFileAccess = systemFileAccess;
 	
 	[self openPath: [self currentDirectory]];
 }
@@ -352,7 +351,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	{
 		if (_showHiddenFiles == TRUE || [filename characterAtIndex: 0] != '.' ||
 			(_showDotDotRow == TRUE && [filename isEqualToString: @".."] && ![[self currentDirectory] isEqualToString: @"/"] &&
-				(![[self currentDirectory] isEqualToString: @"/Applications"] || _protectSystemFiles == FALSE)))
+				(![[self currentDirectory] isEqualToString: @"/Applications"] || _systemFileAccess == TRUE)))
 		{
 			//Create table cell for filename
 			UIImageAndTextTableCell* cell = [[UIImageAndTextTableCell alloc] init];
@@ -455,7 +454,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	NSString* absolutePath = [self absolutePath: path];
 	
 	//Ensure that we are not entering a protected system file
-	if (_protectSystemFiles == TRUE)
+	if (_systemFileAccess == FALSE)
 	{
 		if ([absolutePath hasPrefix: @"/Applications"] == FALSE &&
 			[absolutePath hasPrefix: NSHomeDirectory()] == FALSE)
@@ -617,7 +616,16 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	
 	//Check if file is a directory
 	if (isDirectory == TRUE)
-		return [UIImage applicationImageNamed: [@"Folder" stringByAppendingString: imageSuffix]];	
+	{
+		if ([path isEqualToString: @"Applications"])
+			return [UIImage applicationImageNamed: [@"Applications_Folder" stringByAppendingString: imageSuffix]];
+		else if ([path isEqualToString: @"Trash"])
+			return [UIImage applicationImageNamed: [@"Trash_Folder" stringByAppendingString: imageSuffix]];
+		else if ([path isEqualToString: @"Bookmarks"])
+			return [UIImage applicationImageNamed: [@"Bookmarks_Folder" stringByAppendingString: imageSuffix]];
+		else
+			return [UIImage applicationImageNamed: [@"Folder" stringByAppendingString: imageSuffix]];	
+	}
 	
 	//Check if the file is a preview-supported image
 	if ([extension isEqualToString: @"png"] ||
@@ -648,9 +656,9 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 		[self makeFileviewTableActive];
 	else
 	{
-		if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: NSHomeDirectory()])
+		if (_systemFileAccess == FALSE && [[self currentDirectory] isEqualToString: NSHomeDirectory()])
 			[self changeDirectoryToApplications];
-		else if (_protectSystemFiles == TRUE && [[self currentDirectory] isEqualToString: @"/Applications"])
+		else if (_systemFileAccess == FALSE && [[self currentDirectory] isEqualToString: @"/Applications"])
 			[self changeDirectoryToApplications];
 		else
 			[self openPath: @".."];
@@ -672,7 +680,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	[self openPath: @"/Applications"];
 }
 
-- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byMoving: (BOOL)move;
+- (void) sendSrcPath: (NSString*)srcPath toDstPath: (NSString*)dstPath byFileOp: (int)fileOp
 {
 	//Sanity check args
 	if (srcPath == nil || dstPath == nil)
@@ -686,8 +694,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	NSString* absoluteSrcPath = [self absolutePath: srcPath];
 	NSString* absoluteDstPath = [self absolutePath: dstPath];
 	
-	BOOL operationSuccess;
-	if (move == TRUE)
+	if (fileOp == MFMoveFile)
 	{
 		//operationSuccess = [_fileManager movePath: srcPath toPath: dstPath handler: nil];
 		//HACK: It seems that Apple removed the NSFileManager movePath:toPath:handler selector. Use system command.
@@ -698,7 +705,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 			stringByAppendingString: [self quoteString: absoluteDstPath]];
 		[self executeSystemCommand: moveCommand withSleepTime: 50];
 	}
-	else
+	else if (fileOp == MFCopyFile)
 	{
 		//operationSuccess = [_fileManager copyPath: srcPath toPath: dstPath handler: nil];
 		//HACK: It seems that Apple removed the NSFileManager copyPath:toPath:handler selector. Use system command.
@@ -708,6 +715,17 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 			stringByAppendingString: @" "]
 			stringByAppendingString: [self quoteString: absoluteDstPath]];
 		[self executeSystemCommand: copyCommand withSleepTime: 50];
+	}
+	else if (fileOp == MFLinkFile)
+	{
+		//operationSuccess = [_fileManager linkPath: srcPath toPath: dstPath handler: nil];
+		//HACK: It seems that Apple removed the NSFileManager linkPath:toPath:handler selector. Use system command.
+		NSString* linkCommand = [[[[[NSString string]
+			stringByAppendingString: @"/bin/ln -s "] 
+			stringByAppendingString: [self quoteString: absoluteSrcPath]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [self quoteString: absoluteDstPath]];
+		[self executeSystemCommand: linkCommand withSleepTime: 50];
 	}
 	
 	[self refreshFileView];
