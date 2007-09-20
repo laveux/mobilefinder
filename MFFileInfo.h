@@ -42,9 +42,11 @@
 {
 	UIPreferencesTable* _infoTable;
 	MFAppSelector* _appSelector;
+	UIView* _activeView;
 	
 	UIPreferencesTableCell* _attributesGroup;
 	UIPreferencesTextTableCell* _filenameCell;
+	UIPreferencesTableCell* _openWithCell;
 	UIPreferencesTableCell* _ownerAttribCell;
 	UIPreferencesTableCell* _groupAttribCell;
 	UIPreferencesTableCell* _allAttribCell;
@@ -74,6 +76,8 @@
 }
 - (id) initWithDoneSelector: (SEL)doneSelector withFrame: (struct CGRect)frame;
 - (void) dealloc;
+- (void) makeInfoTableActive;
+- (void) makeAppSelectorActive;
 - (void) fillWithFile: (NSString*)absolutePath;
 - (NSString*) stringFromFileSize: (NSNumber*)size;
 - (NSString*) quoteString: (NSString*)string;
@@ -91,4 +95,9 @@
 - (void) allAttribWriteButtonPressed;
 - (void) allAttribExecuteButtonPressed;
 
+@end
+
+//Protocol for file info events
+@interface NSObject (MFFileInfoEvents)
+- (void) fileInfo: (MFFileInfo*)fileInfo openFile: (NSString*)path withApplication: (NSString*)appID;
 @end

@@ -124,6 +124,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	
 	//Setup the file info viewer
 	_fileInfo = [[MFFileInfo alloc] initWithDoneSelector: nil/*@selector(makeFileviewTableActive)*/ withFrame: _fileviewTableRect];
+	[_fileInfo setDelegate: self];
 	
 	//Make the fileview table the active view
 	[self makeFileviewTableActive];	
@@ -775,6 +776,11 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 		
 	BOOL operationSuccess = [_fileManager removeFileAtPath: path handler: nil];
 	[self refreshFileView];
+}
+
+- (void) fileInfo: (MFFileInfo*)fileInfo openFile: (NSString*)path withApplication: (NSString*)appID
+{
+	[self launchApplication: appID withArgs: [NSArray arrayWithObjects: path, nil]];
 }
 
 - (UITableCell*) table: (UITable*)table cellForRow: (int)row column: (int)col
