@@ -54,6 +54,8 @@
 #define allWriteMask 0x0002
 #define allExecuteMask 0x0001
 
+#define OPEN_WITH_ROW 3
+
 - (id) initWithDoneSelector: (SEL)doneSelector withFrame: (struct CGRect)frame;
 {
 	//Init view with frame rect
@@ -98,6 +100,9 @@
 	_filenameCell = [[UIPreferencesTextTableCell alloc] init];	
 	[_filenameCell setTitle: @"Filename"];
 	[_filenameCell setReturnAction: @selector(saveChanges)];
+	
+	_openWithCell = [[UIPreferencesTableCell alloc] init];	
+	[_openWithCell setTitle: @"Open With"];
 	
 	_ownerAttribCell = [[UIPreferencesTableCell alloc] init];	
 	[_ownerAttribCell setTitle: @"Owner"];
@@ -176,13 +181,11 @@
 	[self fillWithFile: @"/"];
 		
 	//Create app selector
-	//_appSelector = [[MFAppSelector alloc] initWithFrame: CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height)];
-	//[_appSelector setTarget: [self superview] selector: @selector(launchApplication:withArgs:)];
+	_appSelector = [[MFAppSelector alloc] initWithFrame: CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height)];
+	[_appSelector setTarget: self selector: @selector(openFileWithApplication:)];
 	
-	//Put info table into file info pane	
-	[self transition: 2 toView: _infoTable];
-	//_activeView = _infoTable;
-	//[self transition: 2 toView: _appSelector];
+	//File info initially active
+	[self makeInfoTableActive];
 	
 	return self;
 }
@@ -193,6 +196,7 @@
 	
 	[_attributesGroup release];
 	[_filenameCell release];
+	[_openWithCell release];
 	[_ownerAttribCell release];
 	[_groupAttribCell release];
 	[_allAttribCell release];
@@ -217,6 +221,24 @@
 	[_keyboard release];
 	
 	[super dealloc];
+}
+
+- (void) makeInfoTableActive
+{
+	if (_activeView == _infoTable)
+		return;
+		
+	[self transition: 2 toView: _infoTable];
+	_activeView = _infoTable;
+}
+
+- (void) makeAppSelectorActive
+{
+	if (_activeView == _appSelector)
+		return;
+		
+	[self transition: 1 toView: _appSelector];
+	_activeView = _appSelector;
 }
 
 - (void) fillWithFile: (NSString*)absolutePath
@@ -290,7 +312,8 @@
 		stringByAppendingString: appendOnly == nil ? @"" : appendOnly];
 	[_fileInfoLabel setText: fileInfo];
 		
-	//Refresh table view
+	//Ensure that info table is active and refresh table view
+	[self makeInfoTableActive];
 	[_infoTable reloadData];
 }
 
@@ -376,6 +399,17 @@
 	[self fillWithFile: _absolutePath];
 }
 
+- (void) openFileWithApplication: (NSString*)appID
+{
+	if (appID != nil)
+	{
+		if ([_delegate respondsToSelector: @selector(fileInfo:openFile:withApplication:)])
+			[_delegate fileInfo: self openFile: _absolutePath withApplication: appID];
+	}
+	
+	[self makeInfoTableActive];
+}
+
 - (void) doneButtonPressed
 {
 	if ([[self superview] respondsToSelector: _doneButtonSelector])
@@ -415,6 +449,14 @@
 - (void) allAttribWriteButtonPressed { [self buttonPressed: _allAttribWriteButton]; }
 - (void) allAttribExecuteButtonPressed { [self buttonPressed: _allAttribExecuteButton]; }
 
+- (void) tableRowSelected: (id)unknown
+{
+	int selectedRow = [_infoTable selectedRow];
+	
+	if (selectedRow == OPEN_WITH_ROW)
+		[self makeAppSelectorActive];
+}
+
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
 {
 	return 4;
@@ -426,7 +468,7 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 4;
+		case 1: return 5;
 		case 2: return 0;
 		case 3: return 1;
 		default: return 0;
@@ -455,6 +497,15 @@
 		case 2: return TRUE;
 		case 3: return FALSE;
 		default: return TRUE;
+	}
+}
+
+- (BOOL) table: (UITable*)table showDisclosureForRow: (int)row
+{
+	switch (row)
+	{
+		case OPEN_WITH_ROW: return TRUE;
+		default: return FALSE;
 	}
 }
 
@@ -489,9 +540,10 @@
 			switch (row)
 			{
 				case 0:	return _filenameCell;
-				case 1:	return _ownerAttribCell;
-				case 2:	return _groupAttribCell;
-				case 3:	return _allAttribCell;
+				case 1: return _openWithCell;
+				case 2:	return _ownerAttribCell;
+				case 3:	return _groupAttribCell;
+				case 4:	return _allAttribCell;
 			}
 		case 2: return _fileInfoGroup;
 		case 3:
