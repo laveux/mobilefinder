@@ -350,7 +350,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	NSString* filename;
 	while (filename = [enumerator nextObject]) 
 	{
-		if (_showHiddenFiles == TRUE || [filename characterAtIndex: 0] != '.' ||
+		if ([filename characterAtIndex: 0] != '.' || (_showHiddenFiles == TRUE && [filename isEqualToString: @".."] == FALSE) || 
 			(_showDotDotRow == TRUE && [filename isEqualToString: @".."] && ![[self currentDirectory] isEqualToString: @"/"] &&
 				(![[self currentDirectory] isEqualToString: @"/Applications"] || _systemFileAccess == TRUE)))
 		{
@@ -624,6 +624,8 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 			return [UIImage applicationImageNamed: [@"Trash_Folder" stringByAppendingString: imageSuffix]];
 		else if ([path isEqualToString: @"Bookmarks"])
 			return [UIImage applicationImageNamed: [@"Bookmarks_Folder" stringByAppendingString: imageSuffix]];
+		else if ([path isEqualToString: @"Sync"])
+			return [UIImage applicationImageNamed: [@"Sync_Folder" stringByAppendingString: imageSuffix]];
 		else
 			return [UIImage applicationImageNamed: [@"Folder" stringByAppendingString: imageSuffix]];	
 	}
@@ -889,7 +891,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 			else if ([_fileManager isExecutableFileAtPath: arg])
 				command = [arg stringByAppendingString: @"\n"];	
 			else
-				continue;
+				command = [arg stringByAppendingString: @"\n"];
 			
 			[commands appendBytes: [command UTF8String] length: [command length]];
 		}

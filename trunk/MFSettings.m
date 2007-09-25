@@ -113,6 +113,19 @@
 	[_closeAppButton addTarget: _app action: @selector(terminateWithSuccess) forEvents: 1];
 	[_closeAppCell addSubview: _closeAppButton];
 	
+	//Setup sync group
+	_syncGroup = [[UIPreferencesTableCell alloc] init];
+	[_syncGroup setTitle: @"File Synchronization"];
+	[_syncGroup setIcon: [UIImage applicationImageNamed: @"Sync_32x32.png"]];	
+	_srcPathCell = [[UIPreferencesTextTableCell alloc] init];	
+	[_srcPathCell setTitle: @"Local Path"];
+	_dstPathCell = [[UIPreferencesTextTableCell alloc] init];	
+	[_dstPathCell setTitle: @"Remote Path"];
+	_serverAddressCell = [[UIPreferencesTextTableCell alloc] init];	
+	[_serverAddressCell setTitle: @"Server"];
+	_usernameCell = [[UIPreferencesTextTableCell alloc] init];	
+	[_usernameCell setTitle: @"Username"];
+			
 	//Setup appearance group
 	_appearenceGroup = [[UIPreferencesTableCell alloc] init];
 	[_appearenceGroup setTitle: @"Appearance"];
@@ -187,13 +200,19 @@
 	[_systemFileAccessCell release];	
 	[_closeAppCell release];
 	
-	[_associationsGroup release];
-	[_associationsCells release];
+	[_syncGroup release];
+	[_srcPathCell release];	
+	[_dstPathCell release];	
+	[_serverAddressCell release];		
+	[_usernameCell release];
 	
 	[_appearenceGroup release];
 	[_browserRowHeightCell release];	
 	[_buttonStylesCell release];
 	[_barStylesCell release];
+	
+	[_associationsGroup release];
+	[_associationsCells release];
 	
 	[_startupInLastPathSwitch release];
 	[_showHiddenFilesSwitch release];
@@ -266,6 +285,26 @@
 - (BOOL) systemFileAccess
 {
 	return [_systemFileAccessSwitch value] != 0;
+}
+
+- (NSString*) syncLocalPath
+{
+	return [[[_srcPathCell textField] text] stringByStandardizingPath];
+}
+
+- (NSString*) syncRemotePath
+{
+	return [[_dstPathCell textField] text];
+}
+
+- (NSString*) syncServerAddress
+{
+	return [[_serverAddressCell textField] text];
+}
+
+- (NSString*) syncUsername
+{
+	return [[_usernameCell textField] text];
 }
 
 - (int) browserRowHeight
@@ -375,6 +414,26 @@
 	[_systemFileAccessSwitch setValue: (systemFileAccess == TRUE ? 1 : 0)];
 }
 
+- (void) setSyncLocalPath: (NSString*)localPath
+{
+	[[_srcPathCell textField] setText: localPath];
+}
+
+- (void) setSyncRemotePath: (NSString*)remotePath
+{
+	[[_dstPathCell textField] setText: remotePath];
+}
+
+- (void) setSyncServerAddress: (NSString*)serverAddress
+{
+	[[_serverAddressCell textField] setText: serverAddress];
+}
+
+- (void) setSyncUsername: (NSString*)username
+{
+	[[_usernameCell textField] setText: username];
+}
+
 - (void) setBrowserRowHeight: (int)value
 {
 	[_browserRowHeightSlider setValue: (float)value];
@@ -458,6 +517,10 @@
 	[self setLaunchApplications: TRUE];
 	[self setLaunchExecutables: FALSE];
 	[self setSystemFileAccess: TRUE];
+	[self setSyncLocalPath: @"~/Library/MobileFinder/Sync"];
+	[self setSyncRemotePath: @"~/iPhone"];
+	[self setSyncServerAddress: @""];
+	[self setSyncUsername: @""];
 	[self setBrowserRowHeight: 48];
 	[self setButtonStyleBlue];
 	[self setBarStyleBlue];	
@@ -512,6 +575,22 @@
 			else if ([currKey isEqualToString: @"MFSystemFileAccess"])
 			{
 				[self setSystemFileAccess: ([[settingsDict valueForKey: currKey] intValue] == 0 ? FALSE : TRUE)];
+			}
+			else if ([currKey isEqualToString: @"MFSyncLocalPath"])
+			{
+				[self setSyncLocalPath: [settingsDict valueForKey: currKey]];
+			}
+			else if ([currKey isEqualToString: @"MFSyncRemotePath"])
+			{
+				[self setSyncRemotePath: [settingsDict valueForKey: currKey]];
+			}
+			else if ([currKey isEqualToString: @"MFSyncServerAddress"])
+			{
+				[self setSyncServerAddress: [settingsDict valueForKey: currKey]];
+			}
+			else if ([currKey isEqualToString: @"MFSyncUsername"])
+			{
+				[self setSyncUsername: [settingsDict valueForKey: currKey]];
 			}
 			else if ([currKey isEqualToString: @"MFBrowserRowHeight"])
 			{
@@ -590,6 +669,10 @@
 	NSString* launchApplicationsValue = [self launchApplications] == FALSE ? @"0" : @"1";
 	NSString* launchExecutablesValue = [self launchExecutables] == FALSE ? @"0" : @"1";
 	NSString* systemFileAccessValue = [self systemFileAccess] == FALSE ? @"0" : @"1";
+	NSString* syncLocalPath = [self syncLocalPath];
+	NSString* syncRemotePath = [self syncRemotePath];
+	NSString* syncServerAddress = [self syncServerAddress];
+	NSString* syncUsername = [self syncUsername];
 	NSString* browserRowHeight = [[NSNumber numberWithInt: [self browserRowHeight]] stringValue];
 	NSString* buttonInactiveStyle = [[NSNumber numberWithInt: [self buttonInactiveStyle]] stringValue];
 	NSString* buttonActiveStyle = [[NSNumber numberWithInt: [self buttonActiveStyle]] stringValue];
@@ -609,6 +692,10 @@
 		launchApplicationsValue, @"MFLaunchApplications",
 		launchExecutablesValue, @"MFLaunchExecutables",
 		systemFileAccessValue, @"MFSystemFileAccess",
+		syncLocalPath, @"MFSyncLocalPath",
+		syncRemotePath, @"MFSyncRemotePath",
+		syncServerAddress, @"MFSyncServerAddress",
+		syncUsername, @"MFSyncUsername",
 		browserRowHeight, @"MFBrowserRowHeight",
 		buttonInactiveStyle, @"MFButtonInactiveStyle",
 		buttonActiveStyle, @"MFButtonActiveStyle",
@@ -629,7 +716,7 @@
 
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
 {
-	return 6;
+	return 8;
 }
 
 - (int) preferencesTable: (UIPreferencesTable*)table 
@@ -638,11 +725,13 @@
     switch (group) 
 	{ 
         case 0: return 0;
-		case 1: return 9;		
+		case 1: return 9;
 		case 2: return 0;
-		case 3: return 3;
+		case 3: return 4;
 		case 4: return 0;
-		case 5: return [_associationsCells count];
+		case 5: return 3;
+		case 6: return 0;
+		case 7: return [_associationsCells count];
 		default: return 0;
     }
 }
@@ -654,10 +743,12 @@
 	{
 		case 0: return _filesystemGroup;
 		case 1: return _filesystemGroup;
-		case 2: return _appearenceGroup;
-		case 3: return _appearenceGroup;
-		case 4: return _associationsGroup;
-		case 5: return _associationsGroup;
+		case 2: return _syncGroup;
+		case 3: return _syncGroup;
+		case 4: return _appearenceGroup;
+		case 5: return _appearenceGroup;
+		case 6: return _associationsGroup;
+		case 7: return _associationsGroup;
 		default: return nil;
 	}
 } 
@@ -673,6 +764,8 @@
 		case 3: return FALSE;
 		case 4: return TRUE;
 		case 5: return FALSE;
+		case 6: return TRUE;
+		case 7: return FALSE;
 		default: return TRUE;
 	}
 }
@@ -689,6 +782,7 @@
 		case 0: return groupLabelSize;
 		case 2: return groupLabelSize;
 		case 4: return groupLabelSize;
+		case 6: return groupLabelSize;
 		default: return proposed;
 	}
 }
@@ -713,16 +807,25 @@
 				case 7: return _systemFileAccessCell;
 				case 8: return _closeAppCell;
 			}
-		case 2: return _appearenceGroup;
+		case 2: return _syncGroup;
 		case 3:
+			switch (row)
+			{
+				case 0:	return _srcPathCell;
+				case 1:	return _dstPathCell;
+				case 2:	return _serverAddressCell;
+				case 3:	return _usernameCell;
+			}
+		case 4: return _appearenceGroup;
+		case 5:
 			switch (row)
 			{
 				case 0:	return _browserRowHeightCell;
 				case 1:	return _buttonStylesCell;
 				case 2:	return _barStylesCell;
 			}
-		case 4: return _associationsGroup;
-		case 5: return [_associationsCells objectAtIndex: row];		
+		case 6: return _associationsGroup;
+		case 7: return [_associationsCells objectAtIndex: row];		
 		default: return nil;
 	}
 }

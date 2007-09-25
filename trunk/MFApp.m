@@ -145,7 +145,7 @@ typedef struct __GSEvent
 	[_moveButton release];
 	[_copyButton release];
 	[_deleteButton release];
-	[_infoButton release];
+	[_specialButton release];
 	[_newButton release];
 	
 	//Release private data
@@ -406,19 +406,19 @@ typedef struct __GSEvent
 	[self resetFileOpButtons];
 	[_fileOpBar addSubview: _newButton];
 	
-	_infoButton = [_fileOpBar createButtonWithContents: @"Info" 
+	_specialButton = [_fileOpBar createButtonWithContents: @"Info" 
 		width: infoButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
-	[_infoButton setFrame: CGRectMake(
+	[_specialButton setFrame: CGRectMake(
 		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + newButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
 		infoButtonWidth, fileOpBarButtonHeight)];
-	[_infoButton setAutosizesToFit: FALSE];
-	[_infoButton addTarget: self action: @selector(infoButtonPressed) forEvents: 1];	
+	[_specialButton setAutosizesToFit: FALSE];
+	[_specialButton addTarget: self action: @selector(infoButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _infoButton];
+	[_fileOpBar addSubview: _specialButton];
 	
 	[_contentView addSubview: _fileOpBar];
 }
@@ -514,7 +514,7 @@ typedef struct __GSEvent
 		[_moveButton setEnabled: FALSE];
 		[_copyButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-		[_infoButton setEnabled: FALSE];
+		[_specialButton setEnabled: FALSE];
 		
 		//Set prompt title for settings
 		[_navBar setPrompt: @"Settings"];
@@ -591,11 +591,11 @@ typedef struct __GSEvent
 		[_newButton setTitle: @"New"];
 		[_newButton setEnabled: TRUE];
 	}
-	if (_infoButton != nil)
+	if (_specialButton != nil)
 	{
-		[_infoButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_infoButton setTitle: @"Info"];
-		[_infoButton setEnabled: TRUE];
+		[_specialButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_specialButton setTitle: @"Misc"];
+		[_specialButton setEnabled: TRUE];
 	}
 }
 
@@ -610,7 +610,7 @@ typedef struct __GSEvent
 		[_moveButton setTitle: @"Paste"];
 		[_deleteButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-		[_infoButton setEnabled: FALSE];
+		[_specialButton setEnabled: FALSE];
 		
 		[_pathSelectedForFileOp autorelease];
 		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
@@ -658,6 +658,12 @@ typedef struct __GSEvent
 		[_browser makeFileAtPath: @"untitled file"];
 		[self resetFileOpButtons];
 	}
+	else if ([[_copyButton title] isEqualToString: @"Info"] && [_browser currentSelectedPath] != nil)
+	{
+		[_browser makeFileInfoActive];
+		[_backButton setEnabled: TRUE];
+		[self resetFileOpButtons];
+	}	
 	else
 	{
 		[self resetFileOpButtons];
@@ -669,13 +675,13 @@ typedef struct __GSEvent
 	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
 	{ 
 		[self resetFileOpButtons];
-		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_moveButton setTitle: @"Cancel"];
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Paste"];
+		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_moveButton setTitle: @"Cancel"];
 		[_deleteButton setEnabled: FALSE];
 		[_newButton setEnabled: FALSE];
-		[_infoButton setEnabled: FALSE];
+		[_specialButton setEnabled: FALSE];
 		
 		[_pathSelectedForFileOp autorelease];
 		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
@@ -704,13 +710,13 @@ typedef struct __GSEvent
 	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentSelectedPath] != nil)
 	{
 		[self resetFileOpButtons];
-		[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_deleteButton setTitle: @"Cancel"];
-		[_moveButton setEnabled: FALSE];
 		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_copyButton setTitle: @"Delete"];
+		[_moveButton setEnabled: FALSE];
+		[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_deleteButton setTitle: @"Cancel"];
 		[_newButton setEnabled: FALSE];
-		[_infoButton setEnabled: FALSE];
+		[_specialButton setEnabled: FALSE];
 	}
 	else if ([[_deleteButton title] isEqualToString: @"Bookmark"] && [_browser currentSelectedPath] != nil)
 	{
@@ -732,6 +738,40 @@ typedef struct __GSEvent
 			sendSrcPath: currentSelectedPath 
 			toDstPath: destPath
 			byFileOp: MFLinkFile];
+	}
+	else if ([[_deleteButton title] isEqualToString: @"Sync"])
+	{
+		NSString* echoStatusCommand = [[[NSString string]
+			stringByAppendingString: @"echo "]
+			stringByAppendingString: @"'...'"];
+		NSString* syncRemoteCommand = [[[[[[[[[NSString string]
+			stringByAppendingString: @"/usr/bin/rsync -avz --progress "]
+			stringByAppendingString: [_settings syncLocalPath]]
+			stringByAppendingString: @"/ "]
+			stringByAppendingString: [_settings syncUsername]]
+			stringByAppendingString: @"\@"]
+			stringByAppendingString: [_settings syncServerAddress]]
+			stringByAppendingString: @":"]
+			stringByAppendingString: [_settings syncRemotePath]];
+		NSString* syncLocalCommand = [[[[[[[[[NSString string]
+			stringByAppendingString: @"/usr/bin/rsync -avz --progress "]
+			stringByAppendingString: [_settings syncUsername]]
+			stringByAppendingString: @"\@"]
+			stringByAppendingString: [_settings syncServerAddress]]
+			stringByAppendingString: @":"]
+			stringByAppendingString: [_settings syncRemotePath]]
+			stringByAppendingString: @"/ "]
+			stringByAppendingString: [_settings syncLocalPath]];
+		[_browser launchApplication: @"com.googlecode.mobileterminal.Term-vt100" withArgs: [NSArray arrayWithObjects:
+			@"echo 'MobileFinder is syncing...'",
+			[@"echo " stringByAppendingString: [_browser quoteString: syncRemoteCommand]],
+			syncRemoteCommand,
+			[@"echo " stringByAppendingString: [_browser quoteString: syncLocalCommand]],
+			syncLocalCommand,
+			@"echo 'Sync completed. Exiting...'",
+			@"sleep 4",
+			@"exit",
+			nil]];
 	}
 	else
 	{
@@ -759,7 +799,7 @@ typedef struct __GSEvent
 		}
 		[_newButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
 		[_newButton setTitle: @"Cancel"];
-		[_infoButton setEnabled: FALSE];
+		[_specialButton setEnabled: FALSE];
 	}
 	else
 	{
@@ -769,10 +809,21 @@ typedef struct __GSEvent
 
 - (void) infoButtonPressed
 {
-	if ([[_infoButton title] isEqualToString: @"Info"] && [_browser currentSelectedPath] != nil)
+	if ([[_specialButton title] isEqualToString: @"Misc"])
 	{
-		[_browser makeFileInfoActive];
-		[_backButton setEnabled: TRUE];
+		[self resetFileOpButtons];
+		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_copyButton setTitle: @"Info"];
+		[_moveButton setEnabled: FALSE];
+		[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_deleteButton setTitle: @"Sync"];
+		[_newButton setEnabled: FALSE];
+		[_specialButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_specialButton setTitle: @"Cancel"];
+	}
+	else
+	{
+		[self resetFileOpButtons];
 	}
 }
 
