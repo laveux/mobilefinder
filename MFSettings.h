@@ -56,6 +56,12 @@
 	UIPreferencesTableCell* _systemFileAccessCell;
 	UIPreferencesTableCell* _closeAppCell;
 	
+	UIPreferencesTableCell* _syncGroup;
+	UIPreferencesTextTableCell* _srcPathCell;	
+	UIPreferencesTextTableCell* _dstPathCell;	
+	UIPreferencesTextTableCell* _serverAddressCell;	
+	UIPreferencesTextTableCell* _usernameCell;
+	
 	UIPreferencesTableCell* _appearenceGroup;
 	UIPreferencesTableCell* _browserRowHeightCell;	
 	UIPreferencesTableCell* _buttonStylesCell;	
@@ -98,6 +104,10 @@
 - (BOOL) launchApplications;
 - (BOOL) launchExecutables;
 - (BOOL) systemFileAccess;
+- (NSString*) syncLocalPath;
+- (NSString*) syncRemotePath;
+- (NSString*) syncServerAddress;
+- (NSString*) syncUsername;
 - (int) browserRowHeight;
 - (int) buttonInactiveStyle;
 - (int) buttonActiveStyle;
@@ -114,6 +124,10 @@
 - (void) setLaunchApplications: (BOOL)launchApplications;
 - (void) setLaunchExecutables: (BOOL)launchExecutables;
 - (void) setSystemFileAccess: (BOOL)systemFileAccess;
+- (void) setSyncLocalPath: (NSString*)localPath;
+- (void) setSyncRemotePath: (NSString*)remotePath;
+- (void) setSyncServerAddress: (NSString*)serverAddress;
+- (void) setSyncUsername: (NSString*)username;
 - (void) setBrowserRowHeight: (int)value;
 - (void) setButtonInactiveStyle: (int)style;
 - (void) setButtonActiveStyle: (int)style;

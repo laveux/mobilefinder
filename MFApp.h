@@ -56,7 +56,7 @@
 	UINavBarButton* _moveButton;
 	UINavBarButton* _copyButton;
 	UINavBarButton* _deleteButton;
-	UINavBarButton* _infoButton;
+	UINavBarButton* _specialButton;
 	UINavBarButton* _newButton;
 	
 	NSString* _appLibraryPath;
