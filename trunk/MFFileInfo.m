@@ -99,7 +99,6 @@
 	
 	_filenameCell = [[UIPreferencesTextTableCell alloc] init];	
 	[_filenameCell setTitle: @"Filename"];
-	[_filenameCell setReturnAction: @selector(saveChanges)];
 	
 	_openWithCell = [[UIPreferencesTableCell alloc] init];	
 	[_openWithCell setTitle: @"Open With"];
@@ -239,6 +238,19 @@
 		
 	[self transition: 1 toView: _appSelector];
 	_activeView = _appSelector;
+}
+
+- (void) removeKeyboard
+{
+	if ([_infoTable keyboardVisible] == FALSE)
+		return;
+		
+	//Make sure that the editing flag on these is reset
+	[_filenameCell setEnabled: FALSE];
+	[_filenameCell setEnabled: TRUE];
+	
+	//Hide the keyboard	
+	[_infoTable setKeyboardVisible: FALSE animated: TRUE];
 }
 
 - (void) fillWithFile: (NSString*)absolutePath
@@ -448,6 +460,11 @@
 - (void) allAttribReadButtonPressed { [self buttonPressed: _allAttribReadButton]; }
 - (void) allAttribWriteButtonPressed { [self buttonPressed: _allAttribWriteButton]; }
 - (void) allAttribExecuteButtonPressed { [self buttonPressed: _allAttribExecuteButton]; }
+
+- (void) scrollerDidEndDragging: (id)unknown
+{
+	[self removeKeyboard];
+}
 
 - (void) tableRowSelected: (id)unknown
 {

@@ -62,8 +62,9 @@ typedef struct __GSEvent
 
 - (void) runApplication
 {   
-	//Set applicationID
+	//Set applicationID and version information
 	_applicationID = [@"com.googlecode.MobileFinder" copy];
+	_applicationNameAndVersion = [@"MobileFinder v1.8.0" copy];
 	
 	//Set private global data
 	_appLibraryPath = [[self userLibraryDirectory] 
@@ -83,8 +84,6 @@ typedef struct __GSEvent
 	
 	//Ensure library directories exsist
 	[[NSFileManager defaultManager] createDirectoryAtPath: _appLibraryPath attributes: nil];
-	[[NSFileManager defaultManager] createDirectoryAtPath: _trashPath attributes: nil];
-	[[NSFileManager defaultManager] createDirectoryAtPath: _bookmarksPath attributes: nil];
 	
 	//Setup content view
     struct CGRect screenRect = [UIHardware fullScreenApplicationContentRect];
@@ -114,10 +113,20 @@ typedef struct __GSEvent
 	//Setup the file browser
 	_browser = [[MFBrowser alloc] initWithApplication: self withAppID: _applicationID withFrame: viewRect];
 	[_browser setDelegate: self];
+	[_browser setExecutableLaunchProgram: @"com.googlecode.mobileterminal.Term-vt100"];
+	
+	//Setup the about pane
+	_about = [[MFAbout alloc] initWithFrame: viewRect];
 	
 	//Setup navigation bars
 	_navBarFrame = CGRectMake(0.0, 0.0, navBarWidth, navBarHeight);
 	_fileOpBarFrame = CGRectMake(0.0f, screenRect.size.height - fileOpBarHeight, fileOpBarWidth, fileOpBarHeight);
+	
+	//Ensure standard paths exist in the apple menu
+	[_browser makeDirectoryAtPath: _trashPath];
+	[_browser makeDirectoryAtPath: _bookmarksPath];
+	[_browser makeDirectoryAtPath: [[_settings syncLocalPath] stringByStandardizingPath]];
+	[_browser sendSrcPath: @"/Applications" toDstPath: _appLibraryPath byFileOp: MFLinkFile];	
 	
 	//Make the browser active at start
 	//TODO: no longer suspends! Why!?!
@@ -136,20 +145,22 @@ typedef struct __GSEvent
 	[_mainView release];
 	[_browser release];
 	[_settings release];
+	[_about release];
 	[_navBar release];
 	[_backButton release];
 	[_finderButton release];
 	[_settingsButton release];
 	[_homeButton release];
 	[_fileOpBar release];
-	[_moveButton release];
-	[_copyButton release];
-	[_deleteButton release];
-	[_specialButton release];
-	[_newButton release];
+	[_createButton release];
+	[_fileButton release];
+	[_modifyButton release];
+	[_sendButton release];
+	[_miscButton release];
 	
 	//Release private data
 	[_applicationID release];
+	[_applicationNameAndVersion release];
 	[_launchingApplicationID release];
 	[_appLibraryPath release];
 	[_settingsPath release];
@@ -338,11 +349,11 @@ typedef struct __GSEvent
 	float fileOpBarButtonHeight = 32.0f;
 	float fileOpBarButtonBuffer = 1.0f;
 	float fileOpBarButtonGroupBuffer = 0.0f;
-	float moveButtonWidth = 59.0f;
-	float copyButtonWidth = 59.0f;
-	float deleteButtonWidth = 80.0f;
-	float infoButtonWidth = 59.0f;
-	float newButtonWidth = 59.0f;
+	float fileButtonWidth = 59.0f;
+	float createButtonWidth = 59.0f;
+	float modifyButtonWidth = 80.0f;
+	float sendButtonWidth = 59.0f;
+	float miscButtonWidth = 59.0f;
 	
 	//Setup file operations bar
 	[_fileOpBar release];
@@ -350,75 +361,75 @@ typedef struct __GSEvent
 	[_fileOpBar setBarStyle: [_settings barStyle]];
 		
 	//Setup file operation buttons
-	_copyButton = [_fileOpBar createButtonWithContents: @"Copy" 
-		width: copyButtonWidth 
+	_fileButton = [_fileOpBar createButtonWithContents: @"" 
+		width: createButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
-	[_copyButton setFrame: CGRectMake(
-		_fileOpBarFrame.size.width / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - copyButtonWidth - fileOpBarButtonBuffer * 2.0 - fileOpBarButtonGroupBuffer,
+	[_fileButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f - modifyButtonWidth / 2.0f - fileButtonWidth - createButtonWidth - fileOpBarButtonBuffer * 2.0 - fileOpBarButtonGroupBuffer,
 		fileOpBarNorthBuffer, 
-		copyButtonWidth, fileOpBarButtonHeight)];
-	[_newButton setAutosizesToFit: FALSE];
-	[_copyButton addTarget: self action: @selector(copyButtonPressed) forEvents: 1];
+		createButtonWidth, fileOpBarButtonHeight)];
+	[_miscButton setAutosizesToFit: FALSE];
+	[_fileButton addTarget: self action: @selector(fileButtonPressed) forEvents: 1];
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _copyButton];
+	[_fileOpBar addSubview: _fileButton];
 	
-	_moveButton = [_fileOpBar createButtonWithContents: @"Move" 
-		width: moveButtonWidth 
+	_createButton = [_fileOpBar createButtonWithContents: @"" 
+		width: fileButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
-	[_moveButton setFrame: CGRectMake(
-		_fileOpBarFrame.size.width / 2.0f - deleteButtonWidth / 2.0f - moveButtonWidth - fileOpBarButtonBuffer * 1.0 - fileOpBarButtonGroupBuffer, 
+	[_createButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f - modifyButtonWidth / 2.0f - fileButtonWidth - fileOpBarButtonBuffer * 1.0 - fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
-		moveButtonWidth, fileOpBarButtonHeight)];
-	[_moveButton setAutosizesToFit: FALSE];
-	[_moveButton addTarget: self action: @selector(moveButtonPressed) forEvents: 1];	
+		fileButtonWidth, fileOpBarButtonHeight)];
+	[_createButton setAutosizesToFit: FALSE];
+	[_createButton addTarget: self action: @selector(createButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _moveButton];
+	[_fileOpBar addSubview: _createButton];
 	
-	_deleteButton = [_fileOpBar createButtonWithContents: @"Delete" 
-		width: deleteButtonWidth 
+	_modifyButton = [_fileOpBar createButtonWithContents: @"" 
+		width: modifyButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
-	[_deleteButton setFrame: CGRectMake(
-		_fileOpBarFrame.size.width / 2.0f - deleteButtonWidth / 2.0, 
+	[_modifyButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f - modifyButtonWidth / 2.0, 
 		fileOpBarNorthBuffer, 
-		deleteButtonWidth, fileOpBarButtonHeight)];
-	[_deleteButton setAutosizesToFit: FALSE];
-	[_deleteButton addTarget: self action: @selector(deleteButtonPressed) forEvents: 1];	
+		modifyButtonWidth, fileOpBarButtonHeight)];
+	[_modifyButton setAutosizesToFit: FALSE];
+	[_modifyButton addTarget: self action: @selector(modifyButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _deleteButton];
+	[_fileOpBar addSubview: _modifyButton];
 		
-	_newButton = [_fileOpBar createButtonWithContents: @"New" 
-		width: newButtonWidth 
+	_sendButton = [_fileOpBar createButtonWithContents: @"" 
+		width: sendButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
-	[_newButton setFrame: CGRectMake(
-		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0 + fileOpBarButtonGroupBuffer, 
+	[_sendButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f + modifyButtonWidth / 2.0f + fileOpBarButtonBuffer * 1.0 + fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
-		newButtonWidth, fileOpBarButtonHeight)];
-	[_newButton setAutosizesToFit: FALSE];
-	[_newButton addTarget: self action: @selector(newButtonPressed) forEvents: 1];	
+		miscButtonWidth, fileOpBarButtonHeight)];
+	[_sendButton setAutosizesToFit: FALSE];
+	[_sendButton addTarget: self action: @selector(sendButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _newButton];
+	[_fileOpBar addSubview: _sendButton];
 	
-	_specialButton = [_fileOpBar createButtonWithContents: @"Info" 
-		width: infoButtonWidth 
+	_miscButton = [_fileOpBar createButtonWithContents: @"" 
+		width: miscButtonWidth 
 		barStyle: [_settings barStyle]
 		buttonStyle: [_settings buttonInactiveStyle] 
 		isRight: FALSE];
-	[_specialButton setFrame: CGRectMake(
-		_fileOpBarFrame.size.width / 2.0f + deleteButtonWidth / 2.0f + newButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
+	[_miscButton setFrame: CGRectMake(
+		_fileOpBarFrame.size.width / 2.0f + modifyButtonWidth / 2.0f + miscButtonWidth + fileOpBarButtonBuffer * 2.0 + fileOpBarButtonGroupBuffer, 
 		fileOpBarNorthBuffer, 
-		infoButtonWidth, fileOpBarButtonHeight)];
-	[_specialButton setAutosizesToFit: FALSE];
-	[_specialButton addTarget: self action: @selector(infoButtonPressed) forEvents: 1];	
+		sendButtonWidth, fileOpBarButtonHeight)];
+	[_miscButton setAutosizesToFit: FALSE];
+	[_miscButton addTarget: self action: @selector(miscButtonPressed) forEvents: 1];	
 	[self resetFileOpButtons];
-	[_fileOpBar addSubview: _specialButton];
+	[_fileOpBar addSubview: _miscButton];
 	
 	[_contentView addSubview: _fileOpBar];
 }
@@ -427,10 +438,13 @@ typedef struct __GSEvent
 {
 	if (_activeView == _browser)
 		[_browser changeDirectoryToLast];
-	else //if (_activeView == _settings)
+	else //if (_activeView == _settings || _activeView == _about)
 		[self makeBrowserActive];
 	
+	//Update buttons
 	[self updateBackButton];
+	if ([[_modifyButton title] isEqualToString: @"Done"])
+		[self resetFileOpButtons];
 }
 
 - (void) appleButtonPressed
@@ -477,6 +491,17 @@ typedef struct __GSEvent
 	[self applyStyles];
 }
 
+- (void) makeAboutActive
+{
+	if (_activeView == _about)
+		return;
+	
+	//Update views, bars, and buttons
+	[_mainView transition: 1 toView: _about];
+	_activeView = _about;
+	[self applyStyles];
+}
+
 - (void) applyStyles
 {
 	//Apply bar styles by recreating them
@@ -510,14 +535,34 @@ typedef struct __GSEvent
 		
 		//Set fileOp bar state
 		[self resetFileOpButtons];
-		[_deleteButton setEnabled: FALSE];
-		[_moveButton setEnabled: FALSE];
-		[_copyButton setEnabled: FALSE];
-		[_newButton setEnabled: FALSE];
-		[_specialButton setEnabled: FALSE];
+		[_modifyButton setEnabled: FALSE];
+		[_createButton setEnabled: FALSE];
+		[_fileButton setEnabled: FALSE];
+		[_miscButton setEnabled: FALSE];
+		[_sendButton setEnabled: FALSE];
 		
 		//Set prompt title for settings
 		[_navBar setPrompt: @"Settings"];
+	}
+	else if (_activeView == _about)
+	{
+		//Set navBar state
+		[_finderButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_settingsButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[self updateBackButton];
+		[_appleButton setEnabled: FALSE];
+		[_homeButton setEnabled: FALSE];
+		
+		//Set fileOp bar state
+		[self resetFileOpButtons];
+		[_modifyButton setEnabled: FALSE];
+		[_createButton setEnabled: FALSE];
+		[_fileButton setEnabled: FALSE];
+		[_miscButton setEnabled: FALSE];
+		[_sendButton setEnabled: FALSE];
+		
+		//Set prompt title for settings
+		[_navBar setPrompt: @"About MobileFinder"];
 	}
 }
 
@@ -534,7 +579,11 @@ typedef struct __GSEvent
 		else
 			[_backButton setEnabled: TRUE];
 	}
-	else //if (_activeView == _settings)
+	else if (_activeView == _settings)
+	{
+		[_backButton setTitle: @"Back"];
+	}
+	else //if (_about == _about)
 	{
 		[_backButton setTitle: @"Back"];
 	}
@@ -567,63 +616,141 @@ typedef struct __GSEvent
 
 - (void) resetFileOpButtons
 {
-	if (_copyButton != nil)
+	if (_fileButton != nil)
 	{
-		[_copyButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_copyButton setTitle: @"Copy"];
-		[_copyButton setEnabled: TRUE];
+		[_fileButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_fileButton setTitle: @"File"];
+		[_fileButton setEnabled: TRUE];
 	}
-	if (_moveButton != nil)
+	if (_createButton != nil)
 	{
-		[_moveButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_moveButton setTitle: @"Move"];
-		[_moveButton setEnabled: TRUE];
+		[_createButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_createButton setTitle: @"Create"];
+		[_createButton setEnabled: TRUE];
 	}
-	if (_deleteButton != nil)
+	if (_modifyButton != nil)
 	{
-		[_deleteButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_deleteButton setTitle: @"Delete"];
-		[_deleteButton setEnabled: TRUE];
+		[_modifyButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_modifyButton setTitle: @"Modify"];
+		[_modifyButton setEnabled: TRUE];
+	}	
+	if (_sendButton != nil)
+	{
+		[_sendButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_sendButton setTitle: @"Send"];
+		[_sendButton setEnabled: TRUE];
 	}
-	if (_newButton != nil)
+	if (_miscButton != nil)
 	{
-		[_newButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_newButton setTitle: @"New"];
-		[_newButton setEnabled: TRUE];
-	}
-	if (_specialButton != nil)
-	{
-		[_specialButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
-		[_specialButton setTitle: @"Misc"];
-		[_specialButton setEnabled: TRUE];
+		[_miscButton setNavBarButtonStyle: [_settings buttonInactiveStyle]];
+		[_miscButton setTitle: @"Misc"];
+		[_miscButton setEnabled: TRUE];
 	}
 }
 
-- (void) copyButtonPressed
+//TODO: Move all of the functionality into seperate selectors (very messy!)
+- (void) fileButtonPressed
 {
-	if ([[_copyButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
-	{ 
-		[self resetFileOpButtons];
-		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_copyButton setTitle: @"Cancel"];
-		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_moveButton setTitle: @"Paste"];
-		[_deleteButton setEnabled: FALSE];
-		[_newButton setEnabled: FALSE];
-		[_specialButton setEnabled: FALSE];
-		
-		[_pathSelectedForFileOp autorelease];
-		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
-	}
-	else if ([[_copyButton title] isEqualToString: @"Paste"])
+	if ([[_fileButton title] isEqualToString: @"File"])
 	{
-		[_browser 
-			sendSrcPath: _pathSelectedForFileOp 
-			toDstPath: [_browser currentDirectory]
-			byFileOp: MFMoveFile];
+		[self resetFileOpButtons];
+		[_fileButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_fileButton setTitle: @"Cancel"];
+		[_createButton setEnabled: FALSE];
+		[_modifyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_modifyButton setTitle: @"Delete"];
+		[_sendButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_sendButton setTitle: @"Copy"];
+		[_miscButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_miscButton setTitle: @"Move"];
+	}
+	else if ([[_fileButton title] isEqualToString: @"E-Mail"] && [_browser currentSelectedPath] != nil)
+	{
+		[self resetFileOpButtons];
+		[self openURL: [NSURL URLWithString: [@"mailto:?attachment=" stringByAppendingString: [_browser currentSelectedPath]]]];
+	}
+	else if ([[_fileButton title] isEqualToString: @"About"])
+	{
+		[self resetFileOpButtons];
+		
+		NSString* aboutMessage = [_applicationNameAndVersion stringByAppendingString:
+			@"\n\nMobileFinder is a filesystem manager for the iPhone written by Matt Stoker with help from Dallas Brown.\n\nMobileFinder brings to the iPhone:\n\n* Full iPhone filesystem access\n* Integration with file viewer and file manipulation programs\n* Services to download and upload files to and from the iPhone\n* File operations such as copy, move, delete, and create\n* Many other features"];
+		[_about setText: aboutMessage];
+		[self makeAboutActive];
+	}
+	else if ([[_fileButton title] isEqualToString: @"Setup"])
+	{
+		[self resetFileOpButtons];
+		
+		NSString* aboutMessage = [_applicationNameAndVersion stringByAppendingString:
+			@"\n\nMobileFinder Sync\n\nSync uses the ssh and rsync programs to quickly copy data to and from the iPhone.\n\niPhone Setup:\n\nTap the \"Settings\" button and fill in the \"File Synchronization\" section.\nThe server side must be set up as well.\n\nMac Setup Instructions:\n\nOpen \"System Preferences\", click \"Sharing\", and check \"Remote Login\".\nServer Address (IP) can be found in the \"Network\" pane.\n\nWindows and *nix Setup:\n\nInstall ssh and rsync command line utilities."];
+		[_about setText: aboutMessage];
+		[self makeAboutActive];
+	}
+	else
+	{
 		[self resetFileOpButtons];
 	}
-	else if ([[_copyButton title] isEqualToString: @"Delete"])
+}
+
+- (void) createButtonPressed
+{
+	if ([[_createButton title] isEqualToString: @"Create"])
+	{
+		[self resetFileOpButtons];
+		[_fileButton setEnabled: FALSE];
+		[_createButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_createButton setTitle: @"Cancel"];
+		[_modifyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_modifyButton setTitle: @"Bookmark"];
+		[_miscButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_miscButton setTitle: @"File"];
+		[_sendButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_sendButton setTitle: @"Folder"];
+	}
+	else if ([[_createButton title] isEqualToString: @"Sync"])
+	{
+		[self resetFileOpButtons];
+		[_fileButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_fileButton setTitle: @"Setup"];		
+		[_createButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_createButton setTitle: @"Cancel"];
+		[_modifyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_modifyButton setTitle: @"Remote"];
+		[_sendButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_sendButton setTitle: @"Local"];
+		[_miscButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_miscButton setTitle: @"Both"];
+	}
+	else
+	{
+		[self resetFileOpButtons];
+	}
+}
+
+- (void) modifyButtonPressed
+{
+	if ([[_modifyButton title] isEqualToString: @"Modify"] && [_browser currentSelectedPath] != nil)
+	{	
+		[self resetFileOpButtons];
+		[_fileButton setEnabled: FALSE];
+		[_createButton setEnabled: FALSE];
+		[_modifyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_modifyButton setTitle: @"Done"];
+		[_miscButton setEnabled: FALSE];
+		[_sendButton setEnabled: FALSE];
+		
+		[_browser makeFileInfoActive];
+		[self updateBackButton];
+	}
+	else if ([[_modifyButton title] isEqualToString: @"Done"])
+	{
+		[self resetFileOpButtons];
+		[self updateBackButton];
+		
+		[_browser makeFileviewTableActive];
+	}
+	else if ([[_modifyButton title] isEqualToString: @"Delete"])
 	{
 		NSString* currentSelectedPath = [_browser currentSelectedPath];
 		if (currentSelectedPath != nil)
@@ -653,72 +780,7 @@ typedef struct __GSEvent
 		}
 		[self resetFileOpButtons];
 	}
-	else if ([[_copyButton title] isEqualToString: @"File"])
-	{
-		[_browser makeFileAtPath: @"untitled file"];
-		[self resetFileOpButtons];
-	}
-	else if ([[_copyButton title] isEqualToString: @"Info"] && [_browser currentSelectedPath] != nil)
-	{
-		[_browser makeFileInfoActive];
-		[_backButton setEnabled: TRUE];
-		[self resetFileOpButtons];
-	}	
-	else
-	{
-		[self resetFileOpButtons];
-	}
-}
-
-- (void) moveButtonPressed
-{
-	if ([[_moveButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
-	{ 
-		[self resetFileOpButtons];
-		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_copyButton setTitle: @"Paste"];
-		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_moveButton setTitle: @"Cancel"];
-		[_deleteButton setEnabled: FALSE];
-		[_newButton setEnabled: FALSE];
-		[_specialButton setEnabled: FALSE];
-		
-		[_pathSelectedForFileOp autorelease];
-		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
-	}
-	else if ([[_moveButton title] isEqualToString: @"Paste"])
-	{
-		[_browser 
-			sendSrcPath: _pathSelectedForFileOp 
-			toDstPath: [_browser currentDirectory]
-			byFileOp: MFCopyFile];
-		[self resetFileOpButtons];
-	}
-	else if ([[_moveButton title] isEqualToString: @"Folder"])
-	{
-		[_browser makeDirectoryAtPath: @"untitled folder"];
-		[self resetFileOpButtons];
-	}
-	else
-	{
-		[self resetFileOpButtons];
-	}
-}
-
-- (void) deleteButtonPressed
-{
-	if ([[_deleteButton title] isEqualToString: @"Delete"] && [_browser currentSelectedPath] != nil)
-	{
-		[self resetFileOpButtons];
-		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_copyButton setTitle: @"Delete"];
-		[_moveButton setEnabled: FALSE];
-		[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_deleteButton setTitle: @"Cancel"];
-		[_newButton setEnabled: FALSE];
-		[_specialButton setEnabled: FALSE];
-	}
-	else if ([[_deleteButton title] isEqualToString: @"Bookmark"] && [_browser currentSelectedPath] != nil)
+	else if ([[_modifyButton title] isEqualToString: @"Bookmark"] && [_browser currentSelectedPath] != nil)
 	{
 		[self resetFileOpButtons];
 		
@@ -739,37 +801,131 @@ typedef struct __GSEvent
 			toDstPath: destPath
 			byFileOp: MFLinkFile];
 	}
-	else if ([[_deleteButton title] isEqualToString: @"Sync"])
+	else if ([[_modifyButton title] isEqualToString: @"Remote"])
 	{
-		NSString* echoStatusCommand = [[[NSString string]
-			stringByAppendingString: @"echo "]
-			stringByAppendingString: @"'...'"];
-		NSString* syncRemoteCommand = [[[[[[[[[NSString string]
-			stringByAppendingString: @"/usr/bin/rsync -avz --progress "]
+		//Build a script for rsyncing the folders specified in settings
+		NSString* syncStartMessage = [[[[[[[NSString string]
+			stringByAppendingString: @"'MobileFinder will now upload the contents of "]
 			stringByAppendingString: [_settings syncLocalPath]]
-			stringByAppendingString: @"/ "]
+			stringByAppendingString: @" to "]
+			stringByAppendingString: [_settings syncRemotePath]]
+			stringByAppendingString: @" on "]
+			stringByAppendingString: [_settings syncServerAddress]];
+		NSString* uploadCommand = [[[[[[[[[NSString string]
+			stringByAppendingString: @"/usr/bin/rsync -avz --progress "]
+			stringByAppendingString: [[_settings syncLocalPath] stringByAppendingString: @"/"]]
+			stringByAppendingString: @" "]
 			stringByAppendingString: [_settings syncUsername]]
 			stringByAppendingString: @"\@"]
 			stringByAppendingString: [_settings syncServerAddress]]
 			stringByAppendingString: @":"]
 			stringByAppendingString: [_settings syncRemotePath]];
-		NSString* syncLocalCommand = [[[[[[[[[NSString string]
+			
+		//Launch terminal to perform the sync operation
+		[_browser launchApplication: [_browser executableLaunchProgram] withArgs: [NSArray arrayWithObjects:
+			[@"echo " stringByAppendingString: [_browser quoteString: syncStartMessage]],
+			[@"echo " stringByAppendingString: [_browser quoteString: uploadCommand]],
+			uploadCommand,
+			@"echo 'Upload completed.'",
+			@"echo 'Press enter to exit...'",
+			@"read",
+			@"exit",
+			nil]];
+	}
+	else if ([[_modifyButton title] isEqualToString: @"Term Here"])
+	{
+		[self resetFileOpButtons];
+		
+		//Launch terminal with current directory as starting point
+		[_browser launchApplication: [_browser executableLaunchProgram] withArgs: [NSArray arrayWithObjects:
+			[_browser currentDirectory],
+			nil]];
+	}
+	else
+	{
+		[self resetFileOpButtons];
+	}
+}
+
+- (void) sendButtonPressed
+{
+	if ([[_sendButton title] isEqualToString: @"Send"])
+	{
+		[self resetFileOpButtons];
+		[_fileButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_fileButton setTitle: @"E-Mail"];
+		[_createButton setEnabled: FALSE];
+		[_modifyButton setEnabled: FALSE];
+		[_sendButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_sendButton setTitle: @"Cancel"];
+		[_miscButton setEnabled: FALSE];		
+	}
+	else if ([[_sendButton title] isEqualToString: @"Copy"] && [_browser currentSelectedPath] != nil)
+	{ 
+		[self resetFileOpButtons];
+		[_fileButton setEnabled: FALSE];
+		[_createButton setEnabled: FALSE];
+		[_modifyButton setEnabled: FALSE];
+		[_sendButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_sendButton setTitle: @"Cancel"];
+		[_miscButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_miscButton setTitle: @"Paste"];
+		
+		//Save path for file op
+		[_pathSelectedForFileOp autorelease];
+		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
+	}
+	else if ([[_sendButton title] isEqualToString: @"Paste"])
+	{
+		//TODO: overwrite functionality with warning
+		//TODO: move percentage bar
+		[_browser 
+			sendSrcPath: _pathSelectedForFileOp 
+			toDstPath: [_browser currentDirectory]
+			byFileOp: MFMoveFile];
+		[self resetFileOpButtons];
+	}
+	else if ([[_sendButton title] isEqualToString: @"Folder"])
+	{
+		//Ensure the new filename is unique
+		NSString* newFilename = @"untitled folder";		
+		while ([[NSFileManager defaultManager] fileExistsAtPath: [_browser absolutePath: newFilename]])
+		{
+			newFilename = [newFilename stringByAppendingString: @" 2"];
+		}
+		
+		//Create new directory
+		[_browser makeDirectoryAtPath: newFilename];
+		[self resetFileOpButtons];
+	}
+	else if ([[_sendButton title] isEqualToString: @"Local"])
+	{
+		//Build a script for rsyncing the folders specified in settings
+		NSString* syncStartMessage = [[[[[[[NSString string]
+			stringByAppendingString: @"'MobileFinder will now download the contents of "]
+			stringByAppendingString: [_settings syncRemotePath]]
+			stringByAppendingString: @" on "]
+			stringByAppendingString: [_settings syncServerAddress]]
+			stringByAppendingString: @" to "]
+			stringByAppendingString: [_settings syncLocalPath]];
+		NSString* downloadCommand = [[[[[[[[[NSString string]
 			stringByAppendingString: @"/usr/bin/rsync -avz --progress "]
 			stringByAppendingString: [_settings syncUsername]]
 			stringByAppendingString: @"\@"]
 			stringByAppendingString: [_settings syncServerAddress]]
 			stringByAppendingString: @":"]
-			stringByAppendingString: [_settings syncRemotePath]]
-			stringByAppendingString: @"/ "]
-			stringByAppendingString: [_settings syncLocalPath]];
-		[_browser launchApplication: @"com.googlecode.mobileterminal.Term-vt100" withArgs: [NSArray arrayWithObjects:
-			@"echo 'MobileFinder is syncing...'",
-			[@"echo " stringByAppendingString: [_browser quoteString: syncRemoteCommand]],
-			syncRemoteCommand,
-			[@"echo " stringByAppendingString: [_browser quoteString: syncLocalCommand]],
-			syncLocalCommand,
-			@"echo 'Sync completed. Exiting...'",
-			@"sleep 4",
+			stringByAppendingString: [[_settings syncRemotePath] stringByAppendingString: @"/"]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [_settings syncLocalPath]];		
+			
+		//Launch terminal to perform the sync operation
+		[_browser launchApplication: [_browser executableLaunchProgram] withArgs: [NSArray arrayWithObjects:
+			[@"echo " stringByAppendingString: [_browser quoteString: syncStartMessage]],
+			[@"echo " stringByAppendingString: [_browser quoteString: downloadCommand]],
+			downloadCommand,
+			@"echo 'Download completed.'",
+			@"echo 'Press enter to exit...'",
+			@"read",
 			@"exit",
 			nil]];
 	}
@@ -779,47 +935,117 @@ typedef struct __GSEvent
 	}
 }
 
-- (void) newButtonPressed
+- (void) miscButtonPressed
 {
-	if ([[_newButton title] isEqualToString: @"New"])
+	if ([[_miscButton title] isEqualToString: @"Misc"])
 	{
 		[self resetFileOpButtons];
-		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_copyButton setTitle: @"File"];
-		[_moveButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_moveButton setTitle: @"Folder"];
-		if ([_browser currentSelectedPath] != nil)
-		{
-			[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-			[_deleteButton setTitle: @"Bookmark"];
-		}
-		else
-		{
-			[_deleteButton setEnabled: FALSE];
-		}
-		[_newButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_newButton setTitle: @"Cancel"];
-		[_specialButton setEnabled: FALSE];
+		[_fileButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_fileButton setTitle: @"About"];
+		[_createButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_createButton setTitle: @"Sync"];
+		[_modifyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_modifyButton setTitle: @"Term Here"];
+		[_sendButton setEnabled: FALSE];
+		[_miscButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_miscButton setTitle: @"Cancel"];
 	}
-	else
+	else if ([[_miscButton title] isEqualToString: @"Move"] && [_browser currentSelectedPath] != nil)
+	{ 
+		[self resetFileOpButtons];
+		[_fileButton setEnabled: FALSE];
+		[_createButton setEnabled: FALSE];
+		[_modifyButton setEnabled: FALSE];
+		[_sendButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_sendButton setTitle: @"Paste"];
+		[_miscButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
+		[_miscButton setTitle: @"Cancel"];
+		
+		//Save current path for file operation
+		[_pathSelectedForFileOp autorelease];
+		_pathSelectedForFileOp = [[_browser currentSelectedPath] copy];
+	}
+	else if ([[_miscButton title] isEqualToString: @"Paste"])
 	{
+		//Ensure that the new filename is unique
+		NSString* newFilename = [[_browser currentDirectory] stringByAppendingPathComponent: [_pathSelectedForFileOp lastPathComponent]];		
+		if ([[_browser absolutePath: newFilename] isEqualToString: [_browser absolutePath: _pathSelectedForFileOp]])
+		{
+			newFilename = [[[newFilename stringByDeletingPathExtension] 
+				stringByAppendingString: @" copy"]
+				stringByAppendingPathExtension: [_pathSelectedForFileOp pathExtension]];
+		}
+		
+		//Copy file
+		//TODO: overwrite functionality with warning
+		//TODO: copy percentage bar
+		[_browser 
+			sendSrcPath: _pathSelectedForFileOp 
+			toDstPath: newFilename
+			byFileOp: MFCopyFile];
 		[self resetFileOpButtons];
 	}
-}
-
-- (void) infoButtonPressed
-{
-	if ([[_specialButton title] isEqualToString: @"Misc"])
+	else if ([[_miscButton title] isEqualToString: @"File"])
 	{
+		//Ensure the new filename is unique
+		NSString* newFilename = @"untitled file";		
+		while ([[NSFileManager defaultManager] fileExistsAtPath: [_browser absolutePath: newFilename]])
+		{
+			newFilename = [newFilename stringByAppendingString: @" 2"];
+		}
+		
+		//Create a new file in the current directory
+		[_browser makeFileAtPath: newFilename];
 		[self resetFileOpButtons];
-		[_copyButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_copyButton setTitle: @"Info"];
-		[_moveButton setEnabled: FALSE];
-		[_deleteButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_deleteButton setTitle: @"Sync"];
-		[_newButton setEnabled: FALSE];
-		[_specialButton setNavBarButtonStyle: [_settings buttonActiveStyle]];
-		[_specialButton setTitle: @"Cancel"];
+	}
+	else if ([[_miscButton title] isEqualToString: @"Both"])
+	{
+		//Build a script for rsyncing the folders specified in settings
+		NSString* syncStartMessage = [[[[[[[[[[[[[[NSString string]
+			stringByAppendingString: @"'MobileFinder will now upload the contents of "]
+			stringByAppendingString: [_settings syncLocalPath]]
+			stringByAppendingString: @" to "]
+			stringByAppendingString: [_settings syncRemotePath]]
+			stringByAppendingString: @" on "]
+			stringByAppendingString: [_settings syncServerAddress]]
+			stringByAppendingString: @" and then download the contents of "]
+			stringByAppendingString: [_settings syncRemotePath]]
+			stringByAppendingString: @" on "]
+			stringByAppendingString: [_settings syncServerAddress]]
+			stringByAppendingString: @" to "]
+			stringByAppendingString: [_settings syncLocalPath]]
+			stringByAppendingString: @". You may be asked for your password twice."];
+		NSString* uploadCommand = [[[[[[[[[NSString string]
+			stringByAppendingString: @"/usr/bin/rsync -avz --progress "]
+			stringByAppendingString: [[_settings syncLocalPath] stringByAppendingString: @"/"]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [_settings syncUsername]]
+			stringByAppendingString: @"\@"]
+			stringByAppendingString: [_settings syncServerAddress]]
+			stringByAppendingString: @":"]
+			stringByAppendingString: [_settings syncRemotePath]];
+		NSString* downloadCommand = [[[[[[[[[NSString string]
+			stringByAppendingString: @"/usr/bin/rsync -avz --progress "]
+			stringByAppendingString: [_settings syncUsername]]
+			stringByAppendingString: @"\@"]
+			stringByAppendingString: [_settings syncServerAddress]]
+			stringByAppendingString: @":"]
+			stringByAppendingString: [[_settings syncRemotePath] stringByAppendingString: @"/"]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [_settings syncLocalPath]];
+			
+		//Launch terminal to perform the sync operation
+		[_browser launchApplication: [_browser executableLaunchProgram] withArgs: [NSArray arrayWithObjects:
+			[@"echo " stringByAppendingString: [_browser quoteString: syncStartMessage]],
+			[@"echo " stringByAppendingString: [_browser quoteString: uploadCommand]],
+			uploadCommand,
+			[@"echo " stringByAppendingString: [_browser quoteString: downloadCommand]],
+			downloadCommand,
+			@"echo 'Upload and Download completed. '",
+			@"echo 'Press enter to exit...'",
+			@"read",
+			@"exit",
+			nil]];
 	}
 	else
 	{

@@ -92,6 +92,7 @@
 	
 	NSString* _settingsPath;
 	id _delegate;
+	UIKeyboard* _keyboard;
 }
 - (id) initWithFrame: (struct CGRect)rect withSettingsPath: (NSString*)settingsPath withMFApp: (MFApp*)app;
 - (void) dealloc;
@@ -139,6 +140,7 @@
 - (void) setBarStyleBlack;
 - (void) setFileTypeAssociations: (NSArray*)fileTypeAssociations;
 - (void) setStartupPath: (NSString*)path forApplication: (NSString*)appID;
+- (void) removeKeyboard;
 - (void) readSettings;
 - (void) writeSettings;
 

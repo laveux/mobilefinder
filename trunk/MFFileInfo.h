@@ -78,6 +78,7 @@
 - (void) dealloc;
 - (void) makeInfoTableActive;
 - (void) makeAppSelectorActive;
+- (void) removeKeyboard;
 - (void) fillWithFile: (NSString*)absolutePath;
 - (NSString*) stringFromFileSize: (NSNumber*)size;
 - (NSString*) quoteString: (NSString*)string;
