@@ -74,8 +74,9 @@
 	_filesystemGroup = [[UIPreferencesTableCell alloc] init];
 	[_filesystemGroup setTitle: @"File System"];
 	[_filesystemGroup setIcon: [UIImage applicationImageNamed: @"Folder_32x32.png"]];	
-	_startupDirCell = [[UIPreferencesTextTableCell alloc] init];	
+	_startupDirCell = [[UIPreferencesTextTableCell alloc] init];
 	[_startupDirCell setTitle: @"Startup"];
+	[_startupDirCell setPlaceHolderValue: @"Applications"];
 	_startupInLastPathCell = [[UIPreferencesTableCell alloc] init];
 	[_startupInLastPathCell setTitle: @"Start In Last Location"];
 	_startupInLastPathSwitch = [[UISwitchControl alloc] initWithFrame: switchRect];
@@ -116,15 +117,19 @@
 	//Setup sync group
 	_syncGroup = [[UIPreferencesTableCell alloc] init];
 	[_syncGroup setTitle: @"File Synchronization"];
-	[_syncGroup setIcon: [UIImage applicationImageNamed: @"Sync_32x32.png"]];	
+	[_syncGroup setIcon: [UIImage applicationImageNamed: @"Sync_32x32.png"]];
 	_srcPathCell = [[UIPreferencesTextTableCell alloc] init];	
-	[_srcPathCell setTitle: @"Local Path"];
+	[_srcPathCell setTitle: @"Local Folder"];
+	[_srcPathCell setPlaceHolderValue: @"Local Path To Sync"];
 	_dstPathCell = [[UIPreferencesTextTableCell alloc] init];	
-	[_dstPathCell setTitle: @"Remote Path"];
+	[_dstPathCell setTitle: @"Remote Folder"];
+	[_dstPathCell setPlaceHolderValue: @"Remote Path To Sync"];
 	_serverAddressCell = [[UIPreferencesTextTableCell alloc] init];	
 	[_serverAddressCell setTitle: @"Server"];
+	[_serverAddressCell setPlaceHolderValue: @"Server Address"];
 	_usernameCell = [[UIPreferencesTextTableCell alloc] init];	
-	[_usernameCell setTitle: @"Username"];
+	[_usernameCell setTitle: @"Server Login"];
+	[_usernameCell setPlaceHolderValue: @"Server Login"];
 			
 	//Setup appearance group
 	_appearenceGroup = [[UIPreferencesTableCell alloc] init];
@@ -289,7 +294,7 @@
 
 - (NSString*) syncLocalPath
 {
-	return [[[_srcPathCell textField] text] stringByStandardizingPath];
+	return [[_srcPathCell textField] text];
 }
 
 - (NSString*) syncRemotePath
@@ -490,6 +495,7 @@
 	
 	//Create a cell for adding a filetype
 	UIPreferencesTextTableCell* emptyCell = [[UIPreferencesTextTableCell alloc] init];
+	[emptyCell setPlaceHolderValue: @"Tap to create a new association"];
 	[_associationsCells addObject: emptyCell];
 	[emptyCell release];
 	
@@ -506,6 +512,27 @@
 	}
 }
 
+- (void) removeKeyboard
+{
+	if ([_prefsTable keyboardVisible] == FALSE)
+		return;
+		
+	//Make sure that the editing flag on these is reset
+	[_startupDirCell setEnabled: FALSE];
+	[_startupDirCell setEnabled: TRUE];
+	[_srcPathCell setEnabled: FALSE];
+	[_srcPathCell setEnabled: TRUE];
+	[_dstPathCell setEnabled: FALSE];
+	[_dstPathCell setEnabled: TRUE];
+	[_serverAddressCell setEnabled: FALSE];
+	[_serverAddressCell setEnabled: TRUE];
+	[_usernameCell setEnabled: FALSE];
+	[_usernameCell setEnabled: TRUE];
+	
+	//Hide the keyboard	
+	[_prefsTable setKeyboardVisible: FALSE animated: TRUE];
+}
+
 - (void) readSettings
 {
 	//Set defaults for simple settings
@@ -516,7 +543,7 @@
 	[self setSortFiles: TRUE];
 	[self setLaunchApplications: TRUE];
 	[self setLaunchExecutables: FALSE];
-	[self setSystemFileAccess: TRUE];
+	[self setSystemFileAccess: FALSE];
 	[self setSyncLocalPath: @"~/Library/MobileFinder/Sync"];
 	[self setSyncRemotePath: @"~/iPhone"];
 	[self setSyncServerAddress: @""];
@@ -714,6 +741,11 @@
 	[rawPList writeToFile: _settingsPath atomically: YES];
 }
 
+- (void) scrollerDidEndDragging: (id)unknown
+{
+	[self removeKeyboard];
+}
+
 - (int) numberOfGroupsInPreferencesTable: (UIPreferencesTable*)table 
 {
 	return 8;
@@ -828,6 +860,25 @@
 		case 7: return [_associationsCells objectAtIndex: row];		
 		default: return nil;
 	}
+}
+
+//These Methods track delegate calls made to the application
+- (NSMethodSignature*)methodSignatureForSelector:(SEL)selector 
+{
+	NSLog(@"Requested method for selector: %@", NSStringFromSelector(selector));
+	return [super methodSignatureForSelector:selector];
+}
+
+- (BOOL)respondsToSelector:(SEL)aSelector 
+{
+	NSLog(@"Request for selector: %@", NSStringFromSelector(aSelector));
+	return [super respondsToSelector:aSelector];
+}
+
+- (void)forwardInvocation:(NSInvocation *)anInvocation 
+{
+	NSLog(@"Called from: %@", NSStringFromSelector([anInvocation selector]));
+	[super forwardInvocation:anInvocation];
 }
 
 @end

@@ -107,7 +107,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	_launchExecutables = TRUE;
 	_systemFileAccess = FALSE;
 	_fileTypeAssociations = nil;
-	_executableLaunchProgram = @"com.googlecode.mobileterminal.Term-vt100";
+	_executableLaunchProgram = nil;
 	_mandatoryLaunchApplication = nil;
 	_rowHeight = 48.0f;
 	_rowHeightBuffer = 2.0f;
@@ -347,6 +347,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 	NSEnumerator* enumerator = [fileList objectEnumerator];
 	
 	//Create table cells for each file in the directory, and add them and their paths to the appropriate collections
+	//TODO: percentage bar for operation
 	NSString* filename;
 	while (filename = [enumerator nextObject]) 
 	{
@@ -635,9 +636,14 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 		[extension isEqualToString: @"jpg"] ||
 		[extension isEqualToString: @"jpeg"] ||
 		[extension isEqualToString: @"gif"] ||
-		[extension isEqualToString: @"tiff"])
+		[extension isEqualToString: @"tiff"] ||
+		[extension isEqualToString: @"thm"])
 	{
-		return [UIImage imageAtPath: path];
+		NSString* thumbnailPath = [[path stringByDeletingPathExtension] stringByAppendingPathExtension: @"THM"];
+		if ([_fileManager fileExistsAtPath: thumbnailPath])
+			return [UIImage imageAtPath: thumbnailPath];
+		else
+			return [UIImage imageAtPath: path];
 	}
 	
 	//Check for an image match
@@ -834,7 +840,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 - (void) launchApplication: (NSString*) appID withArgs: (NSArray*)args
 {
 	//HACK: This puts args into the user's .profile so that they are executed when mobileterminal starts
-	if ([appID isEqualToString: _executableLaunchProgram])
+	if (_executableLaunchProgram != nil && [appID isEqualToString: _executableLaunchProgram])
 	{
 		//Build paths to profile, a temp profile location, and the script to be executed
 		NSString* profile = [[_application userHomeDirectory] 
@@ -843,7 +849,7 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 			stringByAppendingPathExtension: @"tmp"];
 		NSString* mobileTerminalScript = [[[_application userLibraryDirectory] 
 			stringByAppendingPathComponent: @"MobileFinder"]
-			stringByAppendingPathComponent: @"MobileFinderProfile"];
+			stringByAppendingPathComponent: @".MobileFinderProfile"];
 		
 		//Determine if the profile already exsists
 		BOOL profileExists = [_fileManager fileExistsAtPath: profile];
@@ -875,7 +881,23 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 		[self executeSystemCommand: addScriptCommand withSleepTime: 20];
 		
 		//Make script to be executed
+		//Add a command to either replace the user's profile after execution, or remove the profile if none existed
 		NSMutableData* commands = [[NSMutableData alloc] initWithCapacity: 0];
+		NSString* cleanupProfileCommand;
+		if (profileExists)
+			cleanupProfileCommand = [[[[@"/bin/mv " 
+			stringByAppendingString: [self quoteString: tempProfile]]
+			stringByAppendingString: @" "]
+			stringByAppendingString: [self quoteString: profile]]
+			stringByAppendingString: @"\n"];
+		else
+			cleanupProfileCommand = [[@"/bin/rm " 
+			stringByAppendingString: [self quoteString: profile]]
+			stringByAppendingString: @"\n"];
+			
+		[commands appendBytes: [cleanupProfileCommand UTF8String] length: [cleanupProfileCommand length]];
+		
+		//Make actual script components
 		NSString* arg;
 		NSString* command;
 		BOOL isDirectory;
@@ -895,21 +917,6 @@ int sortFilesByKind(id obj1, id obj2, void* context)
 			
 			[commands appendBytes: [command UTF8String] length: [command length]];
 		}
-		
-		//Add a command to either replace the user's profile after execution, or remove the profile if none existed
-		NSString* cleanupProfileCommand;
-		if (profileExists)
-			cleanupProfileCommand = [[[[@"/bin/mv " 
-			stringByAppendingString: [self quoteString: tempProfile]]
-			stringByAppendingString: @" "]
-			stringByAppendingString: [self quoteString: profile]]
-			stringByAppendingString: @"\n"];
-		else
-			cleanupProfileCommand = [[@"/bin/rm " 
-			stringByAppendingString: [self quoteString: profile]]
-			stringByAppendingString: @"\n"];
-			
-		[commands appendBytes: [cleanupProfileCommand UTF8String] length: [cleanupProfileCommand length]];
 		
 		//Write the script
 		[commands writeToFile: mobileTerminalScript atomically: YES];

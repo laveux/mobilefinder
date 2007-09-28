@@ -31,16 +31,19 @@
 #import <UIKit/UITransitionView.h>
 #import "MFBrowser.h"
 #import "MFSettings.h"
+#import "MFAbout.h"
 
 @interface MFApp : UIApplication
 {
 	NSString* _applicationID;
+	NSString* _applicationNameAndVersion;
 	NSString* _launchingApplicationID;
 	UIWindow* _window;
 	UIView* _contentView;
 	UITransitionView* _mainView;
 	MFBrowser* _browser;
 	MFSettings* _settings;
+	MFAbout* _about;
 	UIView* _activeView;
 	
 	CGRect _navBarFrame;
@@ -53,11 +56,11 @@
 	
 	CGRect _fileOpBarFrame;
 	UINavigationBar* _fileOpBar;
-	UINavBarButton* _moveButton;
-	UINavBarButton* _copyButton;
-	UINavBarButton* _deleteButton;
-	UINavBarButton* _specialButton;
-	UINavBarButton* _newButton;
+	UINavBarButton* _fileButton;
+	UINavBarButton* _createButton;
+	UINavBarButton* _modifyButton;
+	UINavBarButton* _sendButton;
+	UINavBarButton* _miscButton;
 	
 	NSString* _appLibraryPath;
 	NSString* _settingsPath;
@@ -77,14 +80,15 @@
 - (void) homeButtonPressed;
 - (void) makeBrowserActive;
 - (void) makeSettingsActive;
+- (void) makeAboutActive;
 - (void) applyStyles;
 - (void) updateBackButton;
 - (void) updatePrompt;
 - (void) resetFileOpButtons;
-- (void) copyButtonPressed;
-- (void) moveButtonPressed;
-- (void) deleteButtonPressed;
-- (void) infoButtonPressed;
-- (void) newButtonPressed;
+- (void) fileButtonPressed;
+- (void) createButtonPressed;
+- (void) modifyButtonPressed;
+- (void) miscButtonPressed;
+- (void) sendButtonPressed;
 @end
 
