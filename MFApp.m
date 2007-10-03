@@ -1123,72 +1123,72 @@ typedef struct __GSEvent
 - (void)applicationSuspend:(struct __GSEvent *)fp8
 {
 	[self suspendApplication];
-	[super applicationSuspend:fp8];
+	//[super applicationSuspend:fp8];
 }
 - (void)applicationSuspended:(struct __GSEvent *)fp8
 {
 	[self suspendApplication];
-	[super applicationSuspended:fp8];
+	//[super applicationSuspended:fp8];
 }
 - (void)applicationSuspendedSettingsUpdated:(struct __GSEvent *)fp8
 {
 	[self suspendApplication];
-	[super applicationSuspendedSettingsUpdated:fp8];
+	//[super applicationSuspendedSettingsUpdated:fp8];
 }
 - (void)applicationWillSuspend
 {
 	[self suspendApplication];
-	[super applicationWillSuspend];
+	//[super applicationWillSuspend];
 }
 - (void)applicationWillSuspendForEventsOnly
 {
 	[self suspendApplication];
-	[super applicationWillSuspendForEventsOnly];
+	//[super applicationWillSuspendForEventsOnly];
 }
 - (void)applicationWillSuspendUnderLock
 {
 	[self suspendApplication];
-	[super applicationWillSuspendUnderLock];
+	//[super applicationWillSuspendUnderLock];
 }
 - (void)suspendWithAnimation:(BOOL)fp8
 {
 	[self suspendApplication];
-	[super suspendWithAnimation:fp8];
+	//[super suspendWithAnimation:fp8];
 }
 - (void)applicationDidResume
 {
 	[self resumeApplication];
-	[super applicationDidResume];
+	//[super applicationDidResume];
 }
 - (void)applicationDidResumeForEventsOnly
 {
 	[self resumeApplication];
-	[super applicationDidResumeForEventsOnly];
+	//[super applicationDidResumeForEventsOnly];
 }
 - (void)applicationDidResumeFromUnderLock
 {
 	[self resumeApplication];
-	[super applicationDidResumeFromUnderLock];
+	//[super applicationDidResumeFromUnderLock];
 }
 - (void)applicationResume:(struct __GSEvent *)fp8
 {
 	[self resumeApplication];
-	[super applicationResume:fp8];
+	//[super applicationResume:fp8];
 }
 - (void)applicationResume:(struct __GSEvent *)fp8 withArguments:(id)fp12
 {
 	[self resumeApplication];
-	[super applicationResume:fp8 withArguments:fp12];
+	//[super applicationResume:fp8 withArguments:fp12];
 }
 - (void)applicationWillResume
 {
 	[self resumeApplication];
-	[super applicationWillSuspend];
+	//[super applicationWillSuspend];
 }
 - (void)applicationWillTerminate
 {
 	[_settings writeSettings];
-	[super applicationWillTerminate];
+	//[super applicationWillTerminate];
 }
 
 
